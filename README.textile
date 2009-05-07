@@ -1,0 +1,8 @@
+h2. PMS
+
+Cross platform microblogging and event notification system.  This differs from the standard
+microblogging software available, in that it allows the creation of private password protected groups.
+
+PMS is split into 2 parts:
+The server which is currently made for Google App Engine
+The client, a Py-GTK app which polls the server and allows the user to send/recieve messages/events.

@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+# Copyright 2009 Daniel Woodhouse
+#
+#This file is part of pms.
+#
+#pms is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+#
+#pms is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with pms.  If not, see http://www.gnu.org/licenses/
+import gtk
+import pygtk
+pygtk.require20()
+import os
+import sys
+import optparse
+import cPickle
+launch_dir = os.path.dirname(__file__)
+src_dir = os.path.realpath(os.path.join(launch_dir, "..", "eventnotify"))
+if os.path.exists(src_dir + os.sep + "eventnotify.py"):
+    sys.path.insert(0, src_dir)
+import eventnotify
+
+PROGRAM_DETAILS = {
+    "name" : "event-notify",
+    "version" : "0.01",
+    "authors" : ("Daniel Woodhouse",),
+    "extras" : src_dir,
+}
+
+parser = optparse.OptionParser(version=":name :version by :authors" % PROGRAM_DETAILS)
+parser.add_option('--error-log', '-e', action="store_true",
+                  help=("logs all stderr messages to the home directory (error.log)")) 
+options, args = parser.parse_args()
+
+#check what platform we are running on and setup a homefolder
+if sys.platform.startswith("linux2"):
+    PROGRAM_DETAILS['home'] = os.path.join(os.environ['HOME'], '.eventnotify')
+    if not os.path.exists(PROGRAM_DETAILS['extras']):
+        PROGRAM_DETAILS['extras'] = os.path.join("usr", "share", PROGRAM_DETAILS['name'])
+else:
+    #windows
+    PROGRAM_DETAILS['home'] = os.path.join(os.environ['HOMEPATH'], 'eventnotify')
+    
+try:
+    os.mkdir(PROGRAM_DETAILS['home'])
+except OSError:
+    pass
+
+eventnotify.run()
