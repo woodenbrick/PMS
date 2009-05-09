@@ -78,7 +78,7 @@ class GetSessionKey(webapp.RequestHandler):
         expires = int(time.time() + 86400)
         session_key = user.name + "_" + str(expires) + "_" + "".join(session_key)
         try:
-            sess = models.Session.all().filter("user =", user).fetch(1)[0]
+            sess = models.Session.all().filter("user =", user).get()
             sess.user = user
             sess.session_key = session_key
             sess.expires = expires
