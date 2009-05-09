@@ -36,3 +36,8 @@ class AllMessages(webapp.RequestHandler):
         self.response.out.write("Messages\n")
         for mess in messages:
             self.response.out.write(mess.user.name + " " + mess.comment + mess.group.name + "\n")
+
+class Error(webapp.RequestHandler):
+    def get(self, somthing):
+        self.response.headers['Content-Type'] = 'text/plain'
+        self.response.out.write("404 Not Found: %s" % somthing)

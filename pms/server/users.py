@@ -29,10 +29,10 @@ class Add(webapp.RequestHandler):
     def post(self):
         self.response.headers['Content-Type'] = 'text/plain'
         name = self.request.get("name")
-        password = self.request.get("password")
+        salt = server.generate_salt()
+        password = hashlib.sha1(self.request.get("password") + salt).hexdigest()
         email = self.request.get("email")
         timezone = self.request.get("timezone")
-        salt = self.request.get("salt")
         #check if this user exists already
         check_user = models.User.get_by_key_name(name)
         if check_user is not None:
@@ -47,20 +47,17 @@ class Add(webapp.RequestHandler):
 
 class List(webapp.RequestHandler):
     def get(self):
-        self.response.headers['Content-Type'] = 'text/plain'
         users = models.User.all()
-        u = users.fetch(10)
-        if len(u) == 0:
-            self.response.out.write("Empty")
-        else:
-            self.response.out.write(u)
         for user in users:
-            self.response.out.write(user.name + "\n" + user.salt + "\n" + user.password +"\n\n")
+            server.response(self, user.to_xml(), False)
+        #server.response(self, users, False)
+        #for user in users:
+        #    self.response.out.write(user.name + "\n" + user.salt + "\n" + user.password +"\n\n")
 
 
 class Groups(webapp.RequestHandler):
     """Get a list of groups that a user is a member of"""
-    def post(self):
+    def get(self):
         user, userdata = server.is_valid_key(self)
         groups = models.GroupMember.all().filter("user =", user)
         server.response(self, "OK\n")

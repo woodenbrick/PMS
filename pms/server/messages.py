@@ -49,7 +49,7 @@ class New(webapp.RequestHandler):
 class Check(webapp.RequestHandler):
     """
     Checks the server for new messages
-    Requires: name of user, session_key, timestamp of last msg recieved, group(s), IP
+    Requires: name of user, session_key, timestamp of last msg recieved, IP
     """
     def post(self):
         user, user_data = server.is_valid_key(self)

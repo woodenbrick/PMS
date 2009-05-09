@@ -30,12 +30,13 @@ class Add(webapp.RequestHandler):
         user, user_data = server.is_valid_key(self)
         if not user:
             return server.response(self, user_data)
-        password = self.request.get("password")
-        password_required = True if self.request.get("passreq") == "1" else False
+        password_required = True if self.request.get("password") != "" else False
         group = self.request.get("group")
         if group == "":
             return server.response(self, "MISSINGVALUES")
-        salt = self.request.get("salt")
+        if password_required:
+            salt = server.generate_salt()
+            password = hashlib.sha1(self.request.get("password") + salt).hexdigest()
         check = models.Group.get_by_key_name(group)
         if check is not None:
             return server.response(self, "GROUPEXISTS")
@@ -115,6 +116,7 @@ class List(webapp.RequestHandler):
     def post(self):
         """Returns a list of all groups"""
         groups = models.Group.all()
+        server.response(self, response='OK\n')
         for group in groups:
             server.response(self, response="%s %s %s\n" % (group.name, group.owner.name,
                                                       str(group.password_required)),
@@ -130,5 +132,6 @@ class Members(webapp.RequestHandler):
         if group is None:
             return server.response(self, "NOTGROUP")
         members = models.GroupMember.all().filter("group =", group)
+        server.response(self, response='OK\n')
         for member in members:
             server.response(self, response=member.user.name + "\n", header=False)

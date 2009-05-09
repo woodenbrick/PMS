@@ -50,6 +50,15 @@ def response(handler, response="OK", header=True):
         handler.response.headers['Content-Type'] = 'text/plain'
     handler.response.out.write(response)
 
+
+def generate_salt():
+    salt = []
+    st = string.ascii_letters + string.digits + string.punctuation
+    while len(salt) < 15:
+        num = random.randint(0, len(st) - 1)
+        salt.append(st[num])
+    return "".join(salt)
+
 class GetSessionKey(webapp.RequestHandler):
 
     def post(self):
@@ -75,16 +84,16 @@ class GetSessionKey(webapp.RequestHandler):
         st = string.ascii_letters + string.digits + string.punctuation
         while len(session_key) < 30:
             session_key.append(random.choice(st))
-        expires = int(time.time() + 86400)
+        expires = int(time.time() + 60)
         session_key = user.name + "_" + str(expires) + "_" + "".join(session_key)
         try:
-            sess = models.Session.all().filter("user =", user).fetch(1)[0]
+            sess = models.Session.all().filter("user =", user).get()
             sess.user = user
             sess.session_key = session_key
             sess.expires = expires
             sess.ip = self.request.remote_addr
             sess.put()
-        except IndexError:
+        except AttributeError:
             s = models.Session(user=user, session_key=session_key, expires=expires,
                            ip=self.request.remote_addr)
             s.put()
@@ -111,6 +120,7 @@ application = webapp.WSGIApplication([
     ('/group/delete', groups.Delete),
 
     ('/allmessages', admin.AllMessages), #admin
+    (r'/(.*)', admin.Error),
     ], debug=True)
 
 def main():
