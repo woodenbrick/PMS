@@ -83,10 +83,10 @@ class GetSessionKey(webapp.RequestHandler):
 
         #generate a sessionkey
         session_key = []
-        st = string.ascii_letters + string.digits + string.punctuation
+        st = string.ascii_letters + string.digits
         while len(session_key) < 20:
             session_key.append(random.choice(st))
-        expires = int(time.time() + 60)
+        expires = int(time.time() + 5000)
         session_key = "".join(session_key)
         try:
             sess = models.Session.all().filter("user =", user).get()

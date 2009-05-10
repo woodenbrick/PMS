@@ -84,39 +84,39 @@ class AppEngineConnection(object):
         
         encoded_vals = urllib.urlencode(post_values)
         req = urllib2.urlopen(self.url + "/usr/add", encoded_vals)
-        for line in req.readlines():
-            print line
+        return self.check_xml_response(req)
     
-    def parse_xml(self, doc):
-        """Search an XML doc for tags and returns them all as a list"""
-        tree = ET.parse(doc)
-        iter = tree.getiterator()
-        tags = []
-        for child in iter:
-            if child.tag == tag:
-                tags.append(child.text)
-        return tags
-     
-    def request_session_key(self, name, password):
+    def check_xml_response(self, doc):
+        """Check if our request was valid"""
+        self.xtree = ET.parse(doc)
+        self.iter = self.xtree.getiterator()
+        #print whole doc
+        for i in self.iter:
+           print i.tag, i.text 
+        return self.iter[0].attrib['status']
+
+    
+    def get_tag(self, tag):
+        return self.xtree.find(tag).text
+        
+    def request_session_key(self, password):
         print "Requesting session key"
 
         encoded_vals = urllib.urlencode({
-            "name" : name,
+            "name" : self.username,
             "password" : hashlib.sha1(password).hexdigest(),
             "time" : time.time()
             })
         req = urllib2.urlopen(self.url + "/getsessionkey", encoded_vals)
-        for line in req:
-            print line
-        #print response
-        if response == "OK":
-            self.session_key = req.readline().strip()
-            self.expires = int(req.readline().strip())
+        status = self.check_xml_response(req)
+        if status == "OK":
+            self.session_key = self.get_tag("key")
+            self.expires = int(self.get_tag("expires"))
             self.pickle_key()
             return True
         else:
             self.session_key = False
-            self.error = response
+            self.error = status
             return False
     
     def load_session_key(self):
@@ -126,10 +126,13 @@ class AppEngineConnection(object):
             self.session_key, self.expires = cPickle.load(f)
             f.close()
             if self.expires <= time.time():
-                print 'key is outdated, requesting new'
-                self.request_session_key()
+                print 'key is outdated, requesting new.'
+                print self.expires, time.time()
+            else:
+                return True
         except IOError:
-            self.request_session_key()
+            pass
+        self.request_session_key(raw_input("Enter your password %s: " % self.username))
         if self.session_key:
             return True
         return False
@@ -148,7 +151,7 @@ class AppEngineConnection(object):
         data['name'] = self.username
         encoded_values = urllib.urlencode(data)
         request = urllib2.urlopen(self.url + mapping, encoded_values)
-        return request.read()
+        return self.check_xml_response(request)
     
 def get_values(*args):
     """A simple commandline raw input parser to get values to send to the server
@@ -211,7 +214,7 @@ def run():
     ##print "join group"
     #values = get_values("group", "password")
     #print conn.app_engine_request(values, "/group/join")
-    print "create group"
+    #print "create group"
     values = get_values("group", "password")
     print conn.app_engine_request(values, "/group/add", auto_now=True)
     ##print "checking messages"
@@ -228,7 +231,9 @@ def run():
     #print "deleteing group"
     #print conn.app_engine_request(values, "/deletegroup")
     #values = get_values("group")
-    #print conn.app_engine_request(values, "/msg/check")
+    
+    print conn.app_engine_request({"time" : time.time() - 500,
+                                   "groups" : "danielgroup,arse"}, "/msg/check")
     #print "adding message"
-    #values = get_values("message", "group")
-    #print conn.app_engine_request(values, "/msg/add", auto_now=True)
+    values = get_values("message", "group")
+    print conn.app_engine_request(values, "/msg/add", auto_now=True)

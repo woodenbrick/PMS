@@ -50,19 +50,20 @@ class Check(webapp.RequestHandler):
     """
     Checks the server for new messages
     Requires: name of user, session_key, timestamp of last msg recieved, IP
+    groups that you want
     """
     def post(self):
         user, user_data = server.is_valid_key(self)
-        grouplist = self.request.get("groups").split(",")
-        while True:
-            try:
-                grouplist.remove("")
-            except ValueError:
-                break
-        groups = models.Group.get_by_key_name(grouplist)
-        if user:
-            query = models.Message.gql("where group IN :1", groups).fetch(100)
-            server.response(self, values={"status" : "OK", "messages" : query})
-        else:
+        if not user:
             server.response(self, {"status" : "BADAUTH"})
+        import datetime
+        t = time.gmtime(float(self.request.get("time")))
+        dtime = datetime.datetime(*(t[0:6]))
+        groups = self.request.get("groups").split(",")
+        all_messages = []
+        for group in groups:
+            g = models.Group.get_by_key_name(group)
+            messages = models.Message.all().filter("group =", g).filter("date >", dtime).fetch(100)
+            all_messages.extend(messages)  
+        server.response(self, values={"status" : "OK", "messages" : all_messages}, template="messages")
 
