@@ -19,10 +19,12 @@ import hashlib
 import time
 import random
 import string
+import os
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
+from google.appengine.ext.webapp.template import render
 
 import models
 import groups
@@ -45,10 +47,10 @@ def is_valid_key(handler_obj):
         pass
     return False, "BADAUTH"
 
-def response(handler, response="OK", header=True):
-    if header:
-        handler.response.headers['Content-Type'] = 'text/plain'
-    handler.response.out.write(response)
+def response(handler, values={"status" : "OK" }, template="default"):
+    template_path = os.path.join(os.path.dirname(__file__), "templates", template) + ".xml"
+    handler.response.headers['Content-Type'] = "text/xml"
+    handler.response.out.write(render(template_path, values))
 
 
 def generate_salt():
@@ -69,23 +71,23 @@ class GetSessionKey(webapp.RequestHandler):
         send_time = self.request.get("time")
         ip = self.request.remote_addr
 
-        if time.time() - float(send_time) > 60:
-            return response(self, "BADTIME")
+        if time.time() - float(send_time) > 5000:
+            return response(self, {"status" : "BADTIME"})
     
         user = models.User.all().filter("name =", name).get()
         if user is None:
-            return response(self, 'NOUSER')
+            return response(self, {"status" : "NOUSER"})
         hash_check = hashlib.sha1(hash + user.salt).hexdigest()
         if not user.password == hash_check:
-            return response(self, 'BADPASS')
+            return response(self, {"status" : "BADPASS"})
 
         #generate a sessionkey
         session_key = []
         st = string.ascii_letters + string.digits + string.punctuation
-        while len(session_key) < 30:
+        while len(session_key) < 20:
             session_key.append(random.choice(st))
         expires = int(time.time() + 60)
-        session_key = user.name + "_" + str(expires) + "_" + "".join(session_key)
+        session_key = "".join(session_key)
         try:
             sess = models.Session.all().filter("user =", user).get()
             sess.user = user
@@ -97,7 +99,10 @@ class GetSessionKey(webapp.RequestHandler):
             s = models.Session(user=user, session_key=session_key, expires=expires,
                            ip=self.request.remote_addr)
             s.put()
-        response(self, "OK\n" + session_key + "\n" + str(expires) + "\n")
+        temp_values = {"status" : "OK",
+                        "session_key" : session_key,
+                        "expires" : expires}
+        response(self, temp_values, template="session")
 
 
 
@@ -108,13 +113,13 @@ application = webapp.WSGIApplication([
     ('/msg/check', messages.Check),
 
     ('/usr/add', users.Add),
-    ('/usr/list', users.List),
-    ('/usr/groups', users.Groups),
+    ('/usr/list', users.List), #works
+    (r'/usr/groups/(.+)', users.Groups), #works
     
     ('/group/add', groups.Add),
     ('/group/join', groups.Join),
-    ('/group/list', groups.List),
-    (r'/group/list/(.*)', groups.Members),
+    ('/group/list', groups.List),#works
+    (r'/group/list/(.+)', groups.Members),#works
     ('/group/leave', groups.Leave),
     ('/group/changeowner', groups.ChangeOwner),
     ('/group/delete', groups.Delete),

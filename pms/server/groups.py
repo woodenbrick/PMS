@@ -17,6 +17,8 @@
 
 from google.appengine.ext import webapp
 from google.appengine.ext import db
+from google.appengine.ext.webapp import template
+
 import models
 import hashlib
 import time
@@ -33,13 +35,16 @@ class Add(webapp.RequestHandler):
         password_required = True if self.request.get("password") != "" else False
         group = self.request.get("group")
         if group == "":
-            return server.response(self, "MISSINGVALUES")
+            return server.response(self, {"status" : "MISSINGVALUES"})
         if password_required:
             salt = server.generate_salt()
             password = hashlib.sha1(self.request.get("password") + salt).hexdigest()
+        else:
+            password = None
+            salt = None
         check = models.Group.get_by_key_name(group)
         if check is not None:
-            return server.response(self, "GROUPEXISTS")
+            return server.response(self, {"status" : "GROUPEXISTS"})
         new_group = models.Group(key_name=group, name=group, owner=user,
                                  password_required=password_required,
                                  password=password, salt=salt)
@@ -54,14 +59,14 @@ class Join(webapp.RequestHandler):
         if not user:
             return server.response(self, userdata)
         if self.request.get("group") == "":
-            return server.response(self, response="MISSINGVALUES")
+            return server.response(self, {"status" : "MISSINGVALUES"})
         group = models.Group.get_by_key_name(self.request.get("group"))
         if group is None:
-            return server.response(self, response="NOTGROUP")
+            return server.response(self, {"status" : "NOTGROUP"})
         if group.password_required:
             password = hashlib.sha1(self.request.get("password") + group.salt).hexdigest()
             if password != group.password:
-                return server.response(self, response="BADAUTH" + " " +group.password + " " + group.salt)
+                return server.response(self, {"status" : "BADAUTH"})
         member = models.GroupMember(group=group, user=user)
         member.put()
         return server.response(self)
@@ -71,13 +76,13 @@ class Leave(webapp.RequestHandler):
         user, userdata = server.is_valid_key(self)
         group = models.Group.get_by_key_name(self.request.get("group"))
         if group is None:
-            return server.response(self, response="NOGROUP")
+            return server.response(self, {"status" : "NOGROUP"})
         member = models.GroupMember.all().filter("group =", group).filter("user =", user).get()
         if member is None:
-            return server.response(self, response="NONMEMBER")
+            return server.response(self, {"status" : "NONMEMBER"})
         #owners cant leave their group
         if user.name == group.owner.name:
-            return server.response(self, response="ISOWNER")
+            return server.response(self, {"status" : "ISOWNER"})
         member.delete()
         server.response(self)
         
@@ -86,9 +91,9 @@ class Delete(webapp.RequestHandler):
         user, userdata = server.is_valid_key(self)
         group = models.Group.get_by_key_name(self.request.get("group"))
         if group is None:
-            return server.response(self, response="NOGROUP")
+            return server.response(self, {"status" : "NOGROUP"})
         if models.GroupMember.all().filter("group =", group).count(2) > 1:
-            return server.response(self, response="HASMEMBERS")
+            return server.response(self, {"status" : "HASMEMBERS"})
         member = models.GroupMember.all().filter("group =", group).get()
         member.delete()
         group.delete()
@@ -100,38 +105,32 @@ class ChangeOwner(webapp.RequestHandler):
         user, userdata = server.is_valid_key(self)
         group = models.Group.get_by_key_name(self.request.get("group"))
         if group is None:
-            return server.response(self, response="NOGROUP")
+            return server.response(self, {"status" : "NOGROUP"})
         if user.name != group.owner.name:
-            return server.response(self, response="NOTOWNER")
+            return server.response(self, {"status" : "NOTOWNER"})
         owner = models.GroupMember.all().filter("group =", group).filter("user =", user).get()
         new_owner = models.User.get_by_key_name(self.request.get("newowner"))
         is_member = models.GroupMember.all().filter("group =", group).filter("user = ", new_owner).get()
         if is_member is None:
-            return server.response(self, response="NONMEMBER")
+            return server.response(self, {"status" : "NONMEMBER"})
         owner.owner = new_owner
         owner.put()
         server.response(self)
 
 class List(webapp.RequestHandler):
-    def post(self):
+    def get(self):
         """Returns a list of all groups"""
         groups = models.Group.all()
-        server.response(self, response='OK\n')
-        for group in groups:
-            server.response(self, response="%s %s %s\n" % (group.name, group.owner.name,
-                                                      str(group.password_required)),
-                                                      header=False)
+        server.response(self, values={"status" : "OK", "groups" : groups},
+                        template='groups')
 
     
 class Members(webapp.RequestHandler):
-    def post(self):
+    def get(self, groupname):
         """Get a list of members for a particular group"""
-        if self.request.get("group") == "":
-            return server.response(self, "MISSINGVALUES")
-        group = models.Group.get_by_key_name(self.request.get("group"))
+        group = models.Group.get_by_key_name(groupname)
         if group is None:
-            return server.response(self, "NOTGROUP")
+            return server.response(self, {"status" : "NOTGROUP"})
         members = models.GroupMember.all().filter("group =", group)
-        server.response(self, response='OK\n')
-        for member in members:
-            server.response(self, response=member.user.name + "\n", header=False)
+        server.response(self, {"status" : "OK", "members" : members}, template="groupmembers")
+        

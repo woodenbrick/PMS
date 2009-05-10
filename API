@@ -61,7 +61,7 @@ timezone
 
 The following methods dont require authentication:
 usr/list - A list of all users
-usr/groups - A list of groups a user is a member of
+usr/groups/[username] - A list of groups a user is a member of
 
 group/add - Creates a new group
 Requires:

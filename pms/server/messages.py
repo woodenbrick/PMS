@@ -35,16 +35,16 @@ class New(webapp.RequestHandler):
             group = self.request.get("group")
             message = self.request.get("message")
             if message == "" or group == "":
-                return server.response(self, response="MISSINGVALUES")
+                return server.response(self, {"status" : "MISSINGVALUES"})
             group = models.Group.get_by_key_name(group)
             member = models.GroupMember.all().filter("group =", group).filter("user =", user).get()
             if member is None:
-                return server.response(self, response="NONMEMBER")
+                return server.response(self, {"status" : "NONMEMBER"})
             mess = models.Message(user=user, group=group, comment=message)
             mess.put()
             server.response(self)
         else:
-            server.response(self, user_data)
+            server.response(self, {"status" : "BADAUTH"})
     
 class Check(webapp.RequestHandler):
     """
@@ -62,9 +62,7 @@ class Check(webapp.RequestHandler):
         groups = models.Group.get_by_key_name(grouplist)
         if user:
             query = models.Message.gql("where group IN :1", groups).fetch(100)
-            server.response(self, response="OK\n")
-            for line in query:
-                server.response(self, response=line.comment + " " + str(line.date) +
-                                " " + line.group.name + " " + line.user.name + "\n", header=False)
-
+            server.response(self, values={"status" : "OK", "messages" : query})
+        else:
+            server.response(self, {"status" : "BADAUTH"})
 

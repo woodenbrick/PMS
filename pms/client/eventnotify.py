@@ -27,7 +27,7 @@ import string
 import hashlib
 import time
 import cPickle
-
+from xml.etree import ElementTree as ET
 class EventNotify(object):
     
     def __init__(self, PROGRAM_DETAILS):
@@ -86,17 +86,29 @@ class AppEngineConnection(object):
         req = urllib2.urlopen(self.url + "/usr/add", encoded_vals)
         for line in req.readlines():
             print line
-            
-    def request_session_key(self):
+    
+    def parse_xml(self, doc):
+        """Search an XML doc for tags and returns them all as a list"""
+        tree = ET.parse(doc)
+        iter = tree.getiterator()
+        tags = []
+        for child in iter:
+            if child.tag == tag:
+                tags.append(child.text)
+        return tags
+     
+    def request_session_key(self, name, password):
         print "Requesting session key"
-        post_values = {}
-        post_values['name'] = raw_input("name: ").strip()
-        password = raw_input("password: ")
-        post_values['time'] = time.time()
-        post_values['password'] = hashlib.sha1(password).hexdigest()
-        encoded_vals = urllib.urlencode(post_values)
+
+        encoded_vals = urllib.urlencode({
+            "name" : name,
+            "password" : hashlib.sha1(password).hexdigest(),
+            "time" : time.time()
+            })
         req = urllib2.urlopen(self.url + "/getsessionkey", encoded_vals)
-        response = req.readline().strip()
+        for line in req:
+            print line
+        #print response
         if response == "OK":
             self.session_key = req.readline().strip()
             self.expires = int(req.readline().strip())
@@ -136,7 +148,7 @@ class AppEngineConnection(object):
         data['name'] = self.username
         encoded_values = urllib.urlencode(data)
         request = urllib2.urlopen(self.url + mapping, encoded_values)
-        return request.readlines()
+        return request.read()
     
 def get_values(*args):
     """A simple commandline raw input parser to get values to send to the server
@@ -200,7 +212,7 @@ def run():
     #values = get_values("group", "password")
     #print conn.app_engine_request(values, "/group/join")
     print "create group"
-    values = get_values("group", "password", "salt")
+    values = get_values("group", "password")
     print conn.app_engine_request(values, "/group/add", auto_now=True)
     ##print "checking messages"
     #print "getting groups"

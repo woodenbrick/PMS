@@ -48,18 +48,15 @@ class Add(webapp.RequestHandler):
 class List(webapp.RequestHandler):
     def get(self):
         users = models.User.all()
-        for user in users:
-            server.response(self, user.to_xml(), False)
-        #server.response(self, users, False)
-        #for user in users:
-        #    self.response.out.write(user.name + "\n" + user.salt + "\n" + user.password +"\n\n")
-
+        server.response(self, {"status" : "OK", "users" : users}, "userlist")
 
 class Groups(webapp.RequestHandler):
     """Get a list of groups that a user is a member of"""
-    def get(self):
-        user, userdata = server.is_valid_key(self)
+    def get(self, user):
+        user = models.User.get_by_key_name(user)
+        if user is None:
+            return server.response(self, values={"status" : "NOUSER"})
         groups = models.GroupMember.all().filter("user =", user)
-        server.response(self, "OK\n")
-        for group in groups:
-            server.response(self, group.group.name + ",", header=False)
+        server.response(self, {"status" : "OK", "groups" : groups,
+                               "user" : user, }, template="usr-groups")
+        
