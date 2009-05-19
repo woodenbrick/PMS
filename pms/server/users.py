@@ -17,6 +17,7 @@
 
 from google.appengine.ext import webapp
 from google.appengine.ext import db
+from google.appengine.api import mail
 import models
 import hashlib
 import time
@@ -59,4 +60,45 @@ class Groups(webapp.RequestHandler):
         groups = models.GroupMember.all().filter("user =", user)
         server.response(self, {"status" : "OK", "groups" : groups,
                                "user" : user, }, template="usr-groups")
+        
+class ResetPasswordPart1(webapp.RequestHandler):
+    """recieve a new password from user and send out an activation link to their email"""
+    
+    def post(self):
+        user = models.User.get_by_key_name(self.request.get("name"))
+        if user is None:
+            server.response(self, values={"status" : "NOUSER"})
+        password = self.request.get("password")
+        activation_code = server.generate_salt()
+        temp = models.TempPassword.get_by_key_name(user)
+        if temp is None:
+            temp = models.TempPassword(user=user, temp_pass=password, activation_link=activation_code)
+        else:
+            temp.activation_link = activation_link
+            temp.temp_pass = password
+        temp.put()
+        #send email
+        body = """Your pms account, You, or someone pretending to be you has asked for a password change.
+        To complete the change please follow this link:
+        http://127.0.0.1:8080/usr/%s/changepass/%s
+        This link is valid for 2 days.
+        If you didn't request a password change, please disregard this message.""" % (user.name, activation_code)
+        mail.SendMail(subject="Password change for PMS", body=body)
+        server.response(self)
+        
+class ResetPasswordPart2(webapp.RequestHandler):
+    """Check that the activation link is correct, and change password"""
+    
+    def get(self, name, activation_code):
+        user = models.User.get_by_key_name(name)
+        if user is None:
+            return server.response(self, {"status" : "NOUSER"}, "password_change")
+        temp = models.TempPassword.get_by_key_name(user)
+        if temp.time > time.time():
+            return server.response(self, {"status" : "BADTIME"}, "password_change")
+        if temp.activation_code != activation_code:
+            return server.response(self, {"status" : "BADAUTH"}, "password_change")
+        user.password = hashlib.sha1(temp.temp_pass + user.salt).hexdigest()
+        user.put()
+        server.response(self, template="password_change")
         

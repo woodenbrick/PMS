@@ -34,7 +34,7 @@ import login
 PROGRAM_DETAILS = {
     "name" : "pms",
     "version" : "0.01",
-    "authors" : ("Daniel Woodhouse",),
+    "authors" : ("Daniel Woodhouse", ""),
     "images" : os.path.join(src_dir, "images") + os.sep,
     "glade" : os.path.join(src_dir, "glade") + os.sep,
     "licence" : licence,

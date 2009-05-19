@@ -48,6 +48,12 @@ class GroupMember(db.Model):
     group = db.ReferenceProperty(Group)
     user = db.ReferenceProperty(User)
 
+class TempPassword(db.Model):
+    user = db.ReferenceProperty(User)
+    temp_pass = db.StringProperty()
+    activation_link = db.StringProperty()
+    time = db.FloatProperty()
+
 #class Event(db.Model):
 #    name = db.StringProperty()
 #    group = db.ReferenceProperty(Group)

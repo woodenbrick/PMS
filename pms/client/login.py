@@ -100,3 +100,6 @@ class Login(object):
             self.wTree.get_widget("login_error").set_text("Registration successful")
         else:
             self.wTree.get_widget("register_error").set_text(response)
+            
+    def on_forgot_pass_clicked(self, widget):
+        response = self.wTree.get_widget("pass_change").run()
