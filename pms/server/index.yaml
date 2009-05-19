@@ -16,13 +16,13 @@ indexes:
   - name: date
     direction: desc
 
-# Used 46 times in query history.
+# Used 56 times in query history.
 - kind: Message
   properties:
   - name: group
   - name: date
 
-# Used 5 times in query history.
+# Unused in query history -- copied from input.
 - kind: Message
   properties:
   - name: group

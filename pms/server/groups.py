@@ -42,10 +42,12 @@ class Add(webapp.RequestHandler):
         else:
             password = None
             salt = None
+        description = self.request.get("description")
         check = models.Group.get_by_key_name(group)
         if check is not None:
             return server.response(self, {"status" : "GROUPEXISTS"})
         new_group = models.Group(key_name=group, name=group, owner=user,
+                                 description=description,
                                  password_required=password_required,
                                  password=password, salt=salt)
         new_group.put()

@@ -54,7 +54,6 @@ Requires:
 name
 password - should be sha1 encrypted
 email
-timezone
 
 
 
@@ -71,6 +70,7 @@ group - name of new group
 
 Optional:
 password - A sha1hash of the group password
+description
 
 
 

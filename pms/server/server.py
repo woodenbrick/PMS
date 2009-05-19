@@ -31,6 +31,7 @@ import groups
 import users
 import admin
 import messages
+import errors
 
 def is_valid_key(handler_obj):
     """Checks if the session key is valid, Returns the user model if True"""
@@ -48,6 +49,8 @@ def is_valid_key(handler_obj):
     return False, "BADAUTH"
 
 def response(handler, values={"status" : "OK" }, template="default"):
+    if values["status"] != "OK":
+        values["error"] = errors.errors[values["status"]]
     template_path = os.path.join(os.path.dirname(__file__), "templates", template) + ".xml"
     handler.response.headers['Content-Type'] = "text/xml"
     handler.response.out.write(render(template_path, values))

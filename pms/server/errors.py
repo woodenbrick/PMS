@@ -15,13 +15,14 @@
 #You should have received a copy of the GNU General Public License
 #along with pms.  If not, see http://www.gnu.org/licenses/
 
-Errors = {
+errors = {
     "MISSINGVALUES" : "This request is missing some required data",
     "NOUSER" : "No user with that name exists",
-    "NOGROUP" : "This group doesn't exist",
+    "NOTGROUP" : "This group doesn't exist",
     "USEREXISTS" : "A user with this name already exists",
     "GROUPEXISTS" : "A group with this name already exists",
-    "BADAUTH" : "Incorrect username or password",
+    "BADAUTH" : "Incorrect session key",
+    "BADPASS" : "Incorrect username or password",
     "NONMEMBER" : "User is not a member of this group",
     "HASMEMBERS" : "This group has more than 1 member",
     "ISOWNER" : "Owner cannot leave a group they created",

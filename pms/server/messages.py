@@ -17,6 +17,7 @@
 
 from google.appengine.ext import webapp
 from google.appengine.ext import db
+from google.appengine.api import memcache
 import models
 import hashlib
 import time
@@ -40,7 +41,7 @@ class New(webapp.RequestHandler):
             member = models.GroupMember.all().filter("group =", group).filter("user =", user).get()
             if member is None:
                 return server.response(self, {"status" : "NONMEMBER"})
-            mess = models.Message(user=user, group=group, comment=message)
+            mess = models.Message(user=user, group=group, comment=message, date=int(time.time()))
             mess.put()
             server.response(self)
         else:
@@ -55,15 +56,25 @@ class Check(webapp.RequestHandler):
     def post(self):
         user, user_data = server.is_valid_key(self)
         if not user:
-            server.response(self, {"status" : "BADAUTH"})
-        import datetime
-        t = time.gmtime(float(self.request.get("time")))
-        dtime = datetime.datetime(*(t[0:6]))
+            return server.response(self, {"status" : "BADAUTH"})
+        last_time = int(float(self.request.get("time")))
+        if self.request.get("groups") == "":
+            return server.response(self, {"status" : "MISSINGVALUES"})
         groups = self.request.get("groups").split(",")
+        #use memcache here
+        #lets save the last message sent to a group in a variable
+        # lastmsg-[groupname]
+        #we can checkthis and if it is further in the past than our last check we
+        #skip over this group
+        
         all_messages = []
         for group in groups:
+            #lmsg = memcache.get("lastmsg-" + group)
+            #if lmsg is not None and lsmg < last_time:
+            #    continue
+            
             g = models.Group.get_by_key_name(group)
-            messages = models.Message.all().filter("group =", g).filter("date >", dtime).fetch(100)
+            messages = models.Message.all().filter("group =", g).filter("date >", last_time).fetch(100)
             all_messages.extend(messages)  
         server.response(self, values={"status" : "OK", "messages" : all_messages}, template="messages")
 

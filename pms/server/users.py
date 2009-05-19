@@ -36,14 +36,14 @@ class Add(webapp.RequestHandler):
         #check if this user exists already
         check_user = models.User.get_by_key_name(name)
         if check_user is not None:
-            return server.response(self, response="USEREXISTS")
+            return server.response(self, values={"status" : "USEREXISTS"})
         try:
             new_user = models.User(key_name=name, name=name, password=password,
                                    email=email, timezone=timezone, salt=salt)
             new_user.put()
             server.response(self)
         except db.BadValueError, e:
-            response("ERROR\n" + str(e))
+            server.response(self, values={"status" : "ERROR -" + str(e)})
 
 class List(webapp.RequestHandler):
     def get(self):

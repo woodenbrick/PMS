@@ -33,6 +33,7 @@ class Session(db.Model):
 class Group(db.Model):
     name = db.StringProperty(required=True)
     owner = db.ReferenceProperty(User)
+    description = db.StringProperty()
     password_required = db.BooleanProperty()
     password = db.StringProperty()
     salt = db.StringProperty()
@@ -41,7 +42,7 @@ class Message(db.Model):
     group = db.ReferenceProperty(Group)
     user = db.ReferenceProperty(User)
     comment = db.TextProperty()
-    date = db.DateTimeProperty(auto_now=True)
+    date = db.IntegerProperty()
     
 class GroupMember(db.Model):
     group = db.ReferenceProperty(Group)
