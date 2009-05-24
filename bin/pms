@@ -45,10 +45,9 @@ PROGRAM_DETAILS = {
 
 parser = optparse.OptionParser(version=":name :version by :authors" % PROGRAM_DETAILS)
 parser.add_option('--error-log', '-e', action="store_true",
-                  help=("logs all stderr messages to the home directory (error.log)")
-                 ('--dev-server', '-d', action="store_true",
+                  help=("logs all stderr messages to the home directory (error.log)"))
+parser.add_option('--dev-server', '-d', action="store_true",
                   help=("Use the local google dev app server"))
-                  )
 options, args = parser.parse_args()
 
 if options.dev_server:
