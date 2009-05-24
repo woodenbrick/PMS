@@ -30,8 +30,8 @@ from poster.streaminghttp import register_openers
 
 
 class AppEngineConnection(object):
-    def __init__(self):
-        self.url = "http://127.0.0.1:8080" #"http://zxvf.appspot.com"
+    def __init__(self, server):
+        self.url = server
         self.HOMEDIR = os.path.join(os.environ['HOME'], ".eventnotify") + os.sep
         if not os.path.exists(self.HOMEDIR):
             os.mkdir(self.HOMEDIR)

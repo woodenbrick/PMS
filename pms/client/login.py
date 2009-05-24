@@ -33,7 +33,7 @@ class Login(object):
         self.PROGRAM_DETAILS = PROGRAM_DETAILS
         self.wTree = gtk.glade.XML(self.PROGRAM_DETAILS['glade'] + "login.glade")
         self.wTree.signal_autoconnect(self)
-        self.gae_conn = libpms.AppEngineConnection()
+        self.gae_conn = libpms.AppEngineConnection(self.PROGRAM_DETAILS['server'])
         self.db = db.UserDB(self.PROGRAM_DETAILS['home'] + "usersDB")
         user_details = self.db.return_user_details()
         if user_details is None:
