@@ -32,9 +32,6 @@ from poster.streaminghttp import register_openers
 class AppEngineConnection(object):
     def __init__(self, server):
         self.url = server
-        self.HOMEDIR = os.path.join(os.environ['HOME'], ".eventnotify") + os.sep
-        if not os.path.exists(self.HOMEDIR):
-            os.mkdir(self.HOMEDIR)
         self.default_values = {}
         
     def check_xml_response(self, doc):
