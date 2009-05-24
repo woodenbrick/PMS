@@ -23,6 +23,11 @@ class User(db.Model):
     salt = db.StringProperty()
     email = db.EmailProperty()
     timezone = db.StringProperty()
+
+class UserAvatar(db.Model):
+    user = db.ReferenceProperty(User)
+    avatar = db.BlobProperty()
+    upload_time = db.FloatProperty()
     
 class Session(db.Model):
     user = db.ReferenceProperty(User)

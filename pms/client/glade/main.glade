@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Tue May 19 19:27:10 2009 -->
+<!--Generated with glade3 3.4.5 on Sun May 24 22:39:02 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -18,6 +18,7 @@
         <property name="label" translatable="yes">gtk-preferences</property>
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
+        <signal name="activate" handler="on_preferences_clicked"/>
       </widget>
     </child>
     <child>
@@ -53,7 +54,6 @@
   </widget>
   <widget class="GtkWindow" id="window">
     <property name="window_position">GTK_WIN_POS_CENTER</property>
-    <signal name="destroy" handler="activate_menu"/>
     <child>
       <widget class="GtkVBox" id="vbox4">
         <property name="visible">True</property>
@@ -75,7 +75,7 @@
                         <property name="use_underline">True</property>
                         <signal name="activate" handler="check_messages"/>
                         <child internal-child="image">
-                          <widget class="GtkImage" id="menu-item-image14">
+                          <widget class="GtkImage" id="menu-item-image6">
                           </widget>
                         </child>
                       </widget>
@@ -88,6 +88,7 @@
                         <signal name="activate" handler="show_groups"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="menu-item-image12">
+                            <property name="stock">gtk-missing-image</property>
                           </widget>
                         </child>
                       </widget>
@@ -95,6 +96,20 @@
                     <child>
                       <widget class="GtkSeparatorMenuItem" id="separatormenuitem1">
                         <property name="visible">True</property>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkImageMenuItem" id="menuitem9">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Logout</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_logout_clicked"/>
+                        <child internal-child="image">
+                          <widget class="GtkImage" id="menu-item-image5">
+                            <property name="visible">True</property>
+                            <property name="stock">gtk-jump-to</property>
+                          </widget>
+                        </child>
                       </widget>
                     </child>
                     <child>
@@ -124,6 +139,7 @@
                         <property name="label" translatable="yes">gtk-preferences</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <signal name="activate" handler="on_preferences_clicked"/>
                       </widget>
                     </child>
                   </widget>
@@ -154,6 +170,7 @@
                         <child internal-child="image">
                           <widget class="GtkImage" id="menu-item-image13">
                             <property name="visible">True</property>
+                            <property name="stock">gtk-missing-image</property>
                           </widget>
                         </child>
                       </widget>

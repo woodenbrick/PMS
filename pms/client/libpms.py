@@ -25,9 +25,13 @@ import time
 import cPickle
 from xml.etree import ElementTree as ET
 
+from poster.encode import multipart_encode
+from poster.streaminghttp import register_openers
+
+
 class AppEngineConnection(object):
     def __init__(self):
-        self.url = "http://127.0.0.1:8080"
+        self.url = "http://127.0.0.1:8080" #"http://zxvf.appspot.com"
         self.HOMEDIR = os.path.join(os.environ['HOME'], ".eventnotify") + os.sep
         if not os.path.exists(self.HOMEDIR):
             os.mkdir(self.HOMEDIR)
@@ -70,9 +74,20 @@ class AppEngineConnection(object):
         encoded_values = urllib.urlencode(data)
         try:
             request = urllib2.urlopen(self.url + mapping, encoded_values)
-        except urllib2.URLError:
-            return "Server not found"
+        except urllib2.URLError, e:
+            return e
         return self.check_xml_response(request)
+        
+    def send_avatar(self, filename):
+        """A special function for this, since it requires images to be sent which
+        cannot be done in an easy way"""
+        register_openers()
+        data = {"avatar": open(filename)}
+        data.update(self.default_values)
+        datagen, headers = multipart_encode(data)
+        request = urllib2.Request(self.url + "/usr/changeavatar", datagen, headers)
+        return self.check_xml_response(urllib2.urlopen(request))
+        
     
 def get_values(*args):
     """A simple commandline raw input parser to get values to send to the server

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Tue May 19 20:39:24 2009 -->
+<!--Generated with glade3 3.4.5 on Sun May 24 21:54:50 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="login_window">
-    <property name="title" translatable="yes">MTP-Lastfm - Login</property>
+    <property name="title" translatable="yes">PMS - Login</property>
     <property name="window_position">GTK_WIN_POS_CENTER</property>
     <child>
       <widget class="GtkVBox" id="vbox4">
@@ -107,6 +107,19 @@
                   </packing>
                 </child>
                 <child>
+                  <widget class="GtkCheckButton" id="auto_login">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="label" translatable="yes">Auto login?</property>
+                    <property name="response_id">0</property>
+                    <property name="draw_indicator">True</property>
+                  </widget>
+                  <packing>
+                    <property name="padding">5</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
                   <widget class="GtkHBox" id="hbox1">
                     <property name="visible">True</property>
                     <child>
@@ -124,7 +137,7 @@
                     </child>
                   </widget>
                   <packing>
-                    <property name="position">1</property>
+                    <property name="position">2</property>
                   </packing>
                 </child>
               </widget>
@@ -137,6 +150,9 @@
             <property name="fill">False</property>
             <property name="position">3</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <widget class="GtkHBox" id="hbox8">
@@ -166,7 +182,7 @@
             </child>
           </widget>
           <packing>
-            <property name="position">4</property>
+            <property name="position">5</property>
           </packing>
         </child>
       </widget>
@@ -330,6 +346,7 @@
     </child>
   </widget>
   <widget class="GtkWindow" id="pass_change">
+    <signal name="destroy" handler="on_forgot_pass_finished"/>
     <child>
       <widget class="GtkVBox" id="vbox5">
         <property name="visible">True</property>
@@ -341,7 +358,7 @@
         <child>
           <widget class="GtkLabel" id="">
             <property name="visible">True</property>
-            <property name="label" translatable="yes">Enter your username and a new password, then check your email for an activation link.</property>
+            <property name="label" translatable="yes">Enter your email and a new password, then check your email for an activation link.</property>
           </widget>
           <packing>
             <property name="position">1</property>
@@ -353,11 +370,11 @@
             <child>
               <widget class="GtkLabel" id="label7">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">username: </property>
+                <property name="label" translatable="yes">email: </property>
               </widget>
             </child>
             <child>
-              <widget class="GtkEntry" id="username_pwd_change">
+              <widget class="GtkEntry" id="email_pwd_change">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
               </widget>
@@ -397,13 +414,14 @@
           <widget class="GtkHBox" id="hbox11">
             <property name="visible">True</property>
             <child>
-              <widget class="GtkButton" id="button1">
+              <widget class="GtkButton" id="apply_pass_change">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="label" translatable="yes">gtk-apply</property>
                 <property name="use_stock">True</property>
                 <property name="response_id">0</property>
+                <signal name="clicked" handler="on_forgot_pass_finished"/>
               </widget>
             </child>
             <child>
@@ -414,6 +432,7 @@
                 <property name="label" translatable="yes">gtk-cancel</property>
                 <property name="use_stock">True</property>
                 <property name="response_id">0</property>
+                <signal name="clicked" handler="on_forgot_pass_finished"/>
               </widget>
               <packing>
                 <property name="position">1</property>

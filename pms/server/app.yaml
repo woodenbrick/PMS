@@ -1,10 +1,8 @@
-application: wor-creator
+application: zxvf
 version: 1
 runtime: python
 api_version: 1
 
 handlers:
-- url: /checkifchanges
-  script: checkgroups.py
 - url: /.*
   script: server.py

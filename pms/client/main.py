@@ -27,6 +27,8 @@ import libpms
 import db
 import groups
 import time
+import login
+import preferences
 
 class PMS(object):
     
@@ -34,6 +36,7 @@ class PMS(object):
         self.login = login_obj
         self.PROGRAM_DETAILS = login_obj.PROGRAM_DETAILS
         self.gae_conn = login_obj.gae_conn
+        self.preferences = preferences.Preferences(self.PROGRAM_DETAILS, self.login.username)
         self.wTree = gtk.glade.XML(self.PROGRAM_DETAILS['glade'] + "main.glade")
         self.main_window = self.wTree.get_widget("window")
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
@@ -68,7 +71,7 @@ class PMS(object):
         self.fill_messages()
         #set a timer to check messages
         self.check_messages()
-        self.timer = gobject.timeout_add(10000, self.check_messages)
+        self.timer = gobject.timeout_add(5000, self.check_messages)
     
     
     def set_groups(self, refresh=False):
@@ -87,14 +90,16 @@ class PMS(object):
         return self.user_groups
    
     
-    def check_messages(self):
+    def check_messages(self, logout=False):
+        if logout:
+            return True
         data = {"time" : self.last_time,
                 "groups" : ",".join(self.user_groups)}
         response = self.gae_conn.app_engine_request(data, "/msg/check")
-        print response
         if response == "OK":
             self.wTree.get_widget("main_error").set_text("Last update: " + str(time.time()))
         else:
+            print response
             self.wTree.get_widget("main_error").set_text("Error: " + self.gae_conn.error)
         message = {}
         msg_count = 0
@@ -110,17 +115,23 @@ class PMS(object):
         if msg_count != 0:
             #we have new messages, lets update the last_time
             self.last_time = self.db.last_date()
-            print "lasttime", self.last_time
         return True
 
     def gtk_main_quit(self, widget=None):
+        print widget.name
         gtk.main_quit()
 
+    def on_logout_clicked(self, widget):
+        self.check_messages(logout=True)
+        self.wTree.get_widget("window").destroy()
+        login.Login(self.PROGRAM_DETAILS)
+    
     def activate_menu(self, *args):
         if self.main_window.props.visible:
             self.main_window.hide()
         else:
             self.main_window.show()
+        return True
         
     def popup_menu(self, *args):
         self.right_click_menu.popup(parent_menu_shell=None, parent_menu_item=None,
@@ -177,7 +188,10 @@ class PMS(object):
         groups.GroupWindow(self)
         
     def report_bug(self, widget):
-        psas
+        pass
+    
+    def on_preferences_clicked(self, widget):
+        preferences.PreferencesWindow(self)
         
     def about(self, widget):
         dialog = gtk.AboutDialog()

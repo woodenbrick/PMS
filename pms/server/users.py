@@ -26,9 +26,7 @@ import string
 import server
 
 class Add(webapp.RequestHandler):
-    """Returns OK if successful or ERROR\nError details if unsuccessful"""
     def post(self):
-        self.response.headers['Content-Type'] = 'text/plain'
         name = self.request.get("name")
         salt = server.generate_salt()
         password = hashlib.sha1(self.request.get("password") + salt).hexdigest()
@@ -65,25 +63,37 @@ class ResetPasswordPart1(webapp.RequestHandler):
     """recieve a new password from user and send out an activation link to their email"""
     
     def post(self):
-        user = models.User.get_by_key_name(self.request.get("name"))
+        user = models.User.all().filter("email =", self.request.get("email")).get()
         if user is None:
-            server.response(self, values={"status" : "NOUSER"})
+            return server.response(self, values={"status" : "NOUSER"})
         password = self.request.get("password")
         activation_code = server.generate_salt()
-        temp = models.TempPassword.get_by_key_name(user)
+        temp = models.TempPassword.get_by_key_name(user.name)
         if temp is None:
-            temp = models.TempPassword(user=user, temp_pass=password, activation_link=activation_code)
+            temp = models.TempPassword(key_name=user.name, user=user, temp_pass=password,
+                                       activation_link=activation_code,
+                                       time=time.time())
         else:
-            temp.activation_link = activation_link
+            temp.activation_link = activation_code
             temp.temp_pass = password
+            temp.time = time.time()
         temp.put()
-        #send email
-        body = """Your pms account, You, or someone pretending to be you has asked for a password change.
+
+        message = mail.EmailMessage(sender="wodemoneke@gmail.com",
+                            subject="Password change")
+        message.to = "%s <%s>" % (user.name, user.email)
+        message.body = """
+        Dear %s,
+        You, or someone pretending to be you has asked for a password change.
         To complete the change please follow this link:
-        http://127.0.0.1:8080/usr/%s/changepass/%s
+        
+        http://zxvf.appspot.com/usr/%s/changepass/%s
+        
         This link is valid for 2 days.
-        If you didn't request a password change, please disregard this message.""" % (user.name, activation_code)
-        mail.SendMail(subject="Password change for PMS", body=body)
+        
+        If you didn't request a password change, please disregard this message.""" % (
+            user.name, user.name, activation_code)
+        message.send()
         server.response(self)
         
 class ResetPasswordPart2(webapp.RequestHandler):
@@ -92,13 +102,42 @@ class ResetPasswordPart2(webapp.RequestHandler):
     def get(self, name, activation_code):
         user = models.User.get_by_key_name(name)
         if user is None:
-            return server.response(self, {"status" : "NOUSER"}, "password_change")
-        temp = models.TempPassword.get_by_key_name(user)
+            return server.response(self, {"status" : "NOUSER"}, "password_change", content="html")
+        temp = models.TempPassword.get_by_key_name(user.name)
+        if temp is None:
+            return server.response(self, {"status" : "OUTDATED"}, "password_change", content="html")
         if temp.time > time.time():
-            return server.response(self, {"status" : "BADTIME"}, "password_change")
-        if temp.activation_code != activation_code:
-            return server.response(self, {"status" : "BADAUTH"}, "password_change")
+            return server.response(self, {"status" : "BADTIME"}, "password_change", content="html")
+        if temp.activation_link != activation_code:
+            return server.response(self, {"status" : "BADAUTH"}, "password_change", content="html")
         user.password = hashlib.sha1(temp.temp_pass + user.salt).hexdigest()
         user.put()
-        server.response(self, template="password_change")
+        temp.delete()
+        server.response(self, template="password_change", content="html")
         
+class ChangeAvatar(webapp.RequestHandler):
+    def post(self):
+        user, user_data = server.is_valid_key(self)
+        if not user:
+            return server.response(self, user_data)
+        users_avatar = models.UserAvatar.get_by_key_name(user.name)
+        if users_avatar is None:
+            users_avatar = models.UserAvatar(key_name=user.name)
+        users_avatar.avatar = str(self.request.get("avatar"))
+        users_avatar.user = user
+        users_avatar.upload_time = time.time()
+        users_avatar.put()
+        return server.response(self)
+        
+class RetrieveAvatar(webapp.RequestHandler):
+    def get(self, useravatar):
+        #user, user_data = server.is_valid_key(self)
+        #if user is False:
+        #    return server.response(self, values={"status" : user_data})
+        req = models.UserAvatar.get_by_key_name(useravatar)
+        if req is None:
+            return server.response(self, values={"status" : "NOUSER"})
+        self.response.headers['Content-Type'] = "image/png"
+        self.response.out.write(req.avatar)
+        #return server.response(self, values={"status" : "OK", "avatar" : req},
+        #                       template='avatar', content='png')

@@ -35,6 +35,7 @@ PROGRAM_DETAILS = {
     "name" : "pms",
     "version" : "0.01",
     "authors" : ("Daniel Woodhouse", ""),
+    "email" : "wodemoneke@gmail.com",
     "images" : os.path.join(src_dir, "images") + os.sep,
     "glade" : os.path.join(src_dir, "glade") + os.sep,
     "licence" : licence,
@@ -44,8 +45,17 @@ PROGRAM_DETAILS = {
 
 parser = optparse.OptionParser(version=":name :version by :authors" % PROGRAM_DETAILS)
 parser.add_option('--error-log', '-e', action="store_true",
-                  help=("logs all stderr messages to the home directory (error.log)")) 
+                  help=("logs all stderr messages to the home directory (error.log)")
+                 ('--dev-server', '-d', action="store_true",
+                  help=("Use the local google dev app server"))
+                  )
 options, args = parser.parse_args()
+
+if options.dev_server:
+    PROGRAM_DETAILS['server'] = "http://127.0.0.1:8080"
+    print 'Using local gae server'
+else:
+    PROGRAM_DETAILS['server'] = "http://zxvf.appspot.com"
 
 #check what platform we are running on and setup a homefolder
 if sys.platform.startswith("linux2"):

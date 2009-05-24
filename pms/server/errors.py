@@ -27,6 +27,7 @@ errors = {
     "HASMEMBERS" : "This group has more than 1 member",
     "ISOWNER" : "Owner cannot leave a group they created",
     "NOTOWNER" : "Your request requires group ownership privledges",
+    "OUTDATED" : "The link you have followed is outdated",
     "ERROR" : "", #general error, has its own message
 }
     

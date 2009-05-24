@@ -21,7 +21,7 @@ import gtk
 import gtk.glade
 import pygtk
 pygtk.require20()
-
+import re
 import libpms
 import db
 import main
@@ -39,17 +39,20 @@ class Login(object):
         if user_details is None:
             self.wTree.get_widget("login_window").show()
         else:
+            
             self.username = user_details[0]
             self.password = user_details[1]
             self.session_key = user_details[2]
             self.expires = user_details[3]
+            self.wTree.get_widget("username_entry").set_text(self.username)
+            self.wTree.get_widget("password_entry").set_text(self.password)
+            self.wTree.get_widget("login_window").show()
+            if user_details[4] == 0:
+                return
             if self.expires <= time.time():
-                print 'key is outdated, requesting new.'
                 self.request_session_key()
-            else:
-                print 'success'
 
-    def gtk_main_quit(self, widget=None):
+    def login_quit(self, widget=None):
         gtk.main_quit()
 
     def show_main(self):
@@ -60,6 +63,7 @@ class Login(object):
     def request_session_key(self):
         self.wTree.get_widget("login_error").set_text("Authenticating")
         data = {"name" : self.username, "password" : self.password}
+
         response = self.gae_conn.app_engine_request(data, "/getsessionkey", auto_now=True)
         if response == "OK":
             data = {
@@ -77,7 +81,14 @@ class Login(object):
         
     def on_login_clicked(self, widget):
         self.username = self.wTree.get_widget("username_entry").get_text()
-        self.password = hashlib.sha1(self.wTree.get_widget("password_entry").get_text()).hexdigest()
+        self.password = self.wTree.get_widget("password_entry").get_text()
+        if not re.findall(r"^([a-fA-F\d]{40})$", self.password):
+            self.password = hashlib.sha1(self.password).hexdigest()
+        if self.wTree.get_widget("remember_password").get_active():
+            self.db.add_user(self.username, self.password)
+            self.db.auto_login_user(self.username, self.wTree.get_widget("auto_login").get_active())
+        else:
+            self.db.remove_user(self.username)
         self.request_session_key()
         
     def on_register_clicked(self, widget):
@@ -102,4 +113,23 @@ class Login(object):
             self.wTree.get_widget("register_error").set_text(response)
             
     def on_forgot_pass_clicked(self, widget):
-        response = self.wTree.get_widget("pass_change").run()
+        self.wTree.get_widget("pass_change").show()
+        
+    def on_forgot_pass_finished(self, widget):
+        if widget.name == "apply_pass_change":
+            data = {
+            "password" : hashlib.sha1(self.wTree.get_widget("pwd_change").get_text()).hexdigest(),
+            "email" : self.wTree.get_widget("email_pwd_change").get_text()
+        }
+            response = self.gae_conn.app_engine_request(data, "/usr/changepass")
+            if response == "OK":
+                self.wTree.get_widget("pass_change").hide()
+                self.wTree.get_widget("login_window").show()
+                self.wTree.get_widget("login_error").set_text("Your password wont be changed until you click the activation link in your email")
+            else:
+                self.wTree.get_widget("pass_change_error").set_text(response)
+        
+        else:
+            self.wTree.get_widget("pass_change").hide()
+        
+    

@@ -48,17 +48,18 @@ def is_valid_key(handler_obj):
         pass
     return False, "BADAUTH"
 
-def response(handler, values={"status" : "OK" }, template="default"):
+def response(handler, values={"status" : "OK" }, template="default", content="xml"):
+    type = "image" if content == "png" else "text" 
     if values["status"] != "OK":
         values["error"] = errors.errors[values["status"]]
-    template_path = os.path.join(os.path.dirname(__file__), "templates", template) + ".xml"
-    handler.response.headers['Content-Type'] = "text/xml"
+    template_path = os.path.join(os.path.dirname(__file__), "templates", template) + "." + content
+    handler.response.headers['Content-Type'] = "%s/%s" % (type, content)
     handler.response.out.write(render(template_path, values))
 
 
 def generate_salt():
     salt = []
-    st = string.ascii_letters + string.digits + string.punctuation
+    st = string.ascii_letters + string.digits
     while len(salt) < 15:
         num = random.randint(0, len(st) - 1)
         salt.append(st[num])
@@ -116,8 +117,12 @@ application = webapp.WSGIApplication([
     ('/msg/check', messages.Check),
 
     ('/usr/add', users.Add),
-    ('/usr/list', users.List), #works
-    (r'/usr/groups/(.+)', users.Groups), #works
+    ('/usr/list', users.List),
+    (r'/usr/groups/(.+)', users.Groups),
+    (r'/usr/(.+)/avatar', users.RetrieveAvatar),
+    ('/usr/changeavatar', users.ChangeAvatar),
+    ('/usr/changepass', users.ResetPasswordPart1),
+    (r'/usr/(.+)/changepass/(.+)', users.ResetPasswordPart2),
     
     ('/group/add', groups.Add),
     ('/group/join', groups.Join),

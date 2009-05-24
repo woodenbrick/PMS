@@ -48,15 +48,21 @@ class UserDB(DB):
                 `password` varchar(200) NOT NULL,
                 `last_login` int(20),
                 `session_key` varchar(200),
-                `expiry` int(20)
+                `expiry` int(20),
+                `auto_login` boolean default 0
             )"""
         ]
         self.create_tables(tables)
         
     def add_user(self, username, password):
-        self.cursor.execute("""INSERT INTO users (username, password) VALUES (?, ?)""",
+        self.cursor.execute("""SELECT * FROM users WHERE username=?""", (username,))
+        if self.cursor.fetchone is None:
+            self.cursor.execute("""INSERT INTO users (username, password) VALUES (?, ?)""",
                             (username, password))
-        self.db.commit()
+        else:
+            self.cursor.execute("""UPDATE users set password=? WHERE username=?""",
+                            (password, username))
+            self.db.commit()
     
     def remove_user(self, username):
         self.cursor.execute("""DELETE FROM users WHERE username = ?""",
@@ -67,6 +73,13 @@ class UserDB(DB):
         self.cursor.execute("""UPDATE users SET last_login=:last_login,
                             session_key=:session_key, expiry=:expires
                             WHERE username=:user""", details)
+        self.db.commit()
+        
+    def auto_login_user(self, username, auto_login):
+        """Sets a user to be autologged in.
+        caveats: the user will only be autologged in if they were the last person
+        logged in with a saved password"""
+        self.cursor.execute("""UPDATE users SET auto_login=? WHERE username=?""", (auto_login, username))
         self.db.commit()
     
     def return_user_details(self, username=None):
@@ -119,28 +132,3 @@ class MessageDB(DB):
             #we will allow messages from the last 2 weeks
             t = [time.time() - 1209600]
         return t[0]
-
-
-
-if __name__ == "__main__":
-    db = DB("pmsDB")
-    conn = libpms.AppEngineConnection("daniel")
-    if not conn.load_session_key():
-        sys.exit(conn.error)
-    
-    print "adding message"
-    values = libpms.get_values("message", "group")
-    print conn.app_engine_request(values, "/msg/add", auto_now=True)
-    conn.app_engine_request({"time" : time.time() - 500,
-                                "groups" : "danielgroup"}, "/msg/check")
-    record = {}
-    for item in conn.iter:
-        record[item.tag] = item.text.strip()
-        if item.tag == "date":
-            db.add_new(record)
-        
-    #db.add_new(conn.xtree)
-    ls = db.message_list()
-    print 'messages'
-    for l in ls:
-        print l
