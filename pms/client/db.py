@@ -92,18 +92,12 @@ class UserDB(DB):
         """If username is blank, get the last user"""
         if username is None:
             log.info("Retrieving last user")
-            query = """SELECT * FROM users ORDER BY last_login DESC LIMIT 1"""
+            self.cursor.execute("""SELECT * FROM users ORDER BY last_login DESC LIMIT 1""")
         else:
             log.info("Retrieving specific user: %s" % username)
-            query = """SELECT * FROM users WHERE username=%s""" % username
-        self.cursor.execute(query)
+            self.cursor.execute("""SELECT * FROM users WHERE username=?""", (username,))
         return self.cursor.fetchone()
         
-    def get_users_like(self, name):
-        """Returns users who have a name starting with the given string"""
-        name = name + "%"
-        self.cursor.execute("SELECT username FROM users WHERE username LIKE ?", (name,))
-        return self.cursor.fetchall()
 
 
 class MessageDB(DB):

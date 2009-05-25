@@ -54,7 +54,6 @@ class GroupWindow():
         self.wTree.get_widget("refresh_label").set_text("Refresh (last done \n%s minutes ago)" % diff)
     
     
-    
     def check_for_old_grouplist(self):
         """check for a pickled list for groupliststore and use this instead, along with a warning about
         its date"""
@@ -156,6 +155,11 @@ class GroupWindow():
         """Change membership status without touching the server"""
         model, iter = self.wTree.get_widget("groupview").get_selection().get_selected()
         val = "True" if model.get_value(iter, 4) == "False" else "False"
+        if val == "True":
+            action = "joined"
+        else:
+            action = "left"
+        self.auto_message(action, model.get_value(iter, 0))
         model.set_value(iter, 4, val)
     
     
@@ -224,6 +228,7 @@ class GroupWindow():
                 self.parent.group_box.append_text(values["group"])
                 #add to userslist and remove the old pickle
                 self.parent.user_groups.append(values["group"])
+                self.auto_message("created", values["group"])
                 try:
                     os.remove(self.parent.PROGRAM_DETAILS['home'] + "%s_user_groups" % self.parent.login.username)
                 except IOError:
@@ -233,3 +238,11 @@ class GroupWindow():
                                                               self.parent.gae_conn.error)
                 #show the error message on the main group window
         self.wTree.get_widget("new_dialog").hide()
+        
+        
+    def auto_message(self, action, group):
+        """adds a message of type [left, joined, created] groups"""
+        data = {'message' : "%s has %s the group %s" % (self.parent.login.username,
+                                          action, group),
+                'group' : group}
+        response = self.parent.gae_conn.app_engine_request(data, "/msg/add")

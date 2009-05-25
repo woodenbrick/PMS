@@ -70,16 +70,7 @@ class Login(object):
         main.PMS(self)
         self.wTree.get_widget("login_window").hide()
         
-    
-    def on_username_entry_changed(self, widget):
-        """Check the user database on keypress to see if we have a match"""
-        #entry = self.tree.get_widget("username_entry").get_text()
-        #users = self.db.get_users_like(entry)
-        #if len(users) is 1:
-        #    self.tree.get_widget("username_entry").set_text(users[0][0])
-        pass
-
-    
+       
     def on_entry_key_press_event(self, widget, key):
         #this logs in the user if they press Enter from the password box
         #or focus the passwordbox if press Enter from the username box
@@ -87,6 +78,10 @@ class Login(object):
             if widget.name == "password_entry":
                 self.on_login_clicked(widget)
             else:
+                #get password from db if exists
+                user = self.db.return_user_details(self.wTree.get_widget("username_entry").get_text())
+                if user is not None:
+                    self.wTree.get_widget("password_entry").set_text(user[1])
                 self.wTree.get_widget("password_entry").grab_focus()
                 
                 
@@ -143,7 +138,7 @@ class Login(object):
             self.show_main()
         else:
             self.wTree.get_widget("login_error").set_text(self.gae_conn.error)
-            self.wTre.get_widget("login").set_sensitive(True)
+            self.wTree.get_widget("login").set_sensitive(True)
             
         if self.wTree.get_widget("remember_password").get_active():
             self.db.add_user(self.username, self.password)
