@@ -55,7 +55,7 @@ class PMS(object):
 
         
         self.wTree.signal_autoconnect(self)
-        self.db = db.MessageDB(self.PROGRAM_DETAILS['home'] + "DB")
+        self.db = db.MessageDB(self.PROGRAM_DETAILS['home'] + "MessageDB_" + self.login.username)
         self.set_groups()
         if not self.fill_groups():
             popup = gtk.MessageDialog(None, gtk.DIALOG_MODAL,
@@ -71,7 +71,7 @@ class PMS(object):
         self.fill_messages()
         #set a timer to check messages
         self.check_messages()
-        self.timer = gobject.timeout_add(5000, self.check_messages)
+        self.timer = gobject.timeout_add(10000, self.check_messages)
     
     
     def set_groups(self, refresh=False):
@@ -167,6 +167,7 @@ class PMS(object):
         'group' : self.group_box.get_active_text()}
         response = self.gae_conn.app_engine_request(data, "/msg/add")
         buffer.set_text("")
+        self.check_messages()
         
     def fill_groups(self):
         self.group_box = gtk.combo_box_new_text()

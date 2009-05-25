@@ -78,7 +78,7 @@ class GetSessionKey(webapp.RequestHandler):
         if time.time() - float(send_time) > 5000:
             return response(self, {"status" : "BADTIME"})
     
-        user = models.User.all().filter("name =", name).get()
+        user = models.User.get_by_key_name(name)
         if user is None:
             return response(self, {"status" : "NOUSER"})
         hash_check = hashlib.sha1(hash + user.salt).hexdigest()
@@ -93,15 +93,15 @@ class GetSessionKey(webapp.RequestHandler):
         expires = int(time.time() + 5000)
         session_key = "".join(session_key)
         try:
-            sess = models.Session.all().filter("user =", user).get()
+            sess = models.Session.get_by_key_name(user.name)
             sess.user = user
             sess.session_key = session_key
             sess.expires = expires
             sess.ip = self.request.remote_addr
             sess.put()
         except AttributeError:
-            s = models.Session(user=user, session_key=session_key, expires=expires,
-                           ip=self.request.remote_addr)
+            s = models.Session(key_name=user.name, user=user, session_key=session_key,
+                               expires=expires, ip=self.request.remote_addr)
             s.put()
         temp_values = {"status" : "OK",
                         "session_key" : session_key,

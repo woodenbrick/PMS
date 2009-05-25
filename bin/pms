@@ -70,5 +70,8 @@ try:
     os.mkdir(PROGRAM_DETAILS['home'])
 except OSError:
     pass
+
+
+
 login.Login(PROGRAM_DETAILS)
 gtk.main()

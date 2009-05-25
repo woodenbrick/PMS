@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Sun May 24 20:29:18 2009 -->
+<!--Generated with glade3 3.4.5 on Mon May 25 12:19:58 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="window">
     <property name="visible">True</property>
@@ -37,7 +37,7 @@
                       <widget class="GtkSpinButton" id="msg_check">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="adjustment">1 1 60 1 10 1</property>
+                        <property name="adjustment">1 1 60 1 10 0</property>
                       </widget>
                       <packing>
                         <property name="position">1</property>
@@ -61,10 +61,7 @@
                   <widget class="GtkHBox" id="hbox2">
                     <property name="visible">True</property>
                     <child>
-                      <widget class="GtkLabel" id="label4">
-                        <property name="visible">True</property>
-                        <property name="label" translatable="yes">Your avatar:</property>
-                      </widget>
+                      <placeholder/>
                     </child>
                     <child>
                       <widget class="GtkImage" id="avatar">
@@ -103,7 +100,7 @@
                             <child>
                               <widget class="GtkLabel" id="label5">
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Change</property>
+                                <property name="label" translatable="yes">Change your avatar</property>
                               </widget>
                               <packing>
                                 <property name="position">2</property>
