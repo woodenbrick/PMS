@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Tue May 19 12:24:24 2009 -->
+<!--Generated with glade3 3.4.5 on Mon May 25 20:58:46 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="window">
     <property name="visible">True</property>
     <property name="title" translatable="yes">Groups</property>
     <property name="window_position">GTK_WIN_POS_CENTER</property>
+    <signal name="destroy" handler="on_window_destroy"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
@@ -106,7 +107,35 @@
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <widget class="GtkButton" id="refresh_group">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="response_id">0</property>
+                <signal name="clicked" handler="new_grouplist"/>
+                <child>
+                  <widget class="GtkHBox" id="hbox7">
+                    <property name="visible">True</property>
+                    <child>
+                      <widget class="GtkImage" id="image2">
+                        <property name="visible">True</property>
+                        <property name="stock">gtk-refresh</property>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="refresh_label">
+                        <property name="visible">True</property>
+                      </widget>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </widget>
+                </child>
+              </widget>
+              <packing>
+                <property name="position">2</property>
+              </packing>
             </child>
           </widget>
           <packing>

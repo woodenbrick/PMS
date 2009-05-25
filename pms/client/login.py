@@ -33,14 +33,15 @@ log = logger.new_logger("LOGIN")
 
 class Login(object):
     
-    def __init__(self, PROGRAM_DETAILS):
+    def __init__(self, PROGRAM_DETAILS, new_user=False):
         self.PROGRAM_DETAILS = PROGRAM_DETAILS
         self.wTree = gtk.glade.XML(self.PROGRAM_DETAILS['glade'] + "login.glade")
         self.wTree.signal_autoconnect(self)
         self.gae_conn = libpms.AppEngineConnection(self.PROGRAM_DETAILS['server'])
         self.db = db.UserDB(self.PROGRAM_DETAILS['home'] + "usersDB")
         user_details = self.db.return_user_details()
-        if user_details is None:
+        self.login_auto_completer()
+        if user_details is None or new_user is True:
             log.info("No previous user found")
             self.wTree.get_widget("login_window").show()
         else:
@@ -52,22 +53,59 @@ class Login(object):
             self.password = user_details[1]
             self.session_key, self.expires = self.check_for_session_key()
             if self.session_key and user_details[3] != 0:
-                show_main()
+                self.show_main()
             else:
                 self.wTree.get_widget("username_entry").set_text(self.username)
                 self.wTree.get_widget("password_entry").set_text(self.password)
                 self.wTree.get_widget("login_window").show()
 
 
-    def login_quit(self, widget=None):
+    def on_login_window_destroy(self, widget=None):
         log.info("Quit")
         gtk.main_quit()
 
     def show_main(self):
         self.gae_conn.default_values = { "name" : self.username,
                                          "session_key" : self.session_key}
-        self.wTree.get_widget("login_window").hide()
         main.PMS(self)
+        self.wTree.get_widget("login_window").hide()
+        
+    
+    def on_username_entry_changed(self, widget):
+        """Check the user database on keypress to see if we have a match"""
+        #entry = self.tree.get_widget("username_entry").get_text()
+        #users = self.db.get_users_like(entry)
+        #if len(users) is 1:
+        #    self.tree.get_widget("username_entry").set_text(users[0][0])
+        pass
+
+    
+    def on_entry_key_press_event(self, widget, key):
+        #this logs in the user if they press Enter from the password box
+        #or focus the passwordbox if press Enter from the username box
+        if key.keyval == 65293:
+            if widget.name == "password_entry":
+                self.on_login_clicked(widget)
+            else:
+                self.wTree.get_widget("password_entry").grab_focus()
+                
+                
+    def login_auto_completer(self):
+        self.completion = gtk.EntryCompletion()
+        self.completion.set_inline_completion(True)
+        self.completion.set_popup_completion(False)
+        self.wTree.get_widget("username_entry").set_completion(self.completion)
+        liststore = gtk.ListStore(str)
+        self.completion.set_model(liststore)
+        pixbufcell = gtk.CellRendererPixbuf()
+        self.completion.pack_start(pixbufcell)
+        self.completion.add_attribute(pixbufcell, 'pixbuf', 3)
+        self.completion.set_text_column(0)
+        users = self.db.cursor.execute("""SELECT username FROM users""").fetchall()
+        for user in users:
+            liststore.append([user[0]])
+    
+    
     
     def check_for_session_key(self):
         """check if user has a sessionkey and return sessionkey, expires
@@ -79,31 +117,33 @@ class Login(object):
             return False, False
         key, exp = cPickle.load(f)
         f.close()
-        if exp > time.time():
+        if exp <= time.time():
             log.info("Outdated session key")
             return False, False
-        log.info("Session key available, expires in %s minutes" % (time.time() - exp) / 60)
+        log.info("Session key available, expires in %s minutes" % ((exp - time.time()) / 60))
         return key, exp
     
     def dump_session_key(self):
         f = open(self.PROGRAM_DETAILS['home'] + "sessionkey_" + self.username, "w")
-        self.info("Saving session key")
+        log.info("Saving session key")
         cPickle.dump([self.session_key, self.expires], f)
         f.close()
 
     def request_session_key(self):
         #only request a new key if the old one is outdated
-        self.wTree.get_widget("login_error").set_text("Authenticating")
+        self.wTree.get_widget("login_error").set_text("Requesting session key...")
         data = {"name" : self.username, "password" : self.password}
         log.info("Requesting session key")
         response = self.gae_conn.app_engine_request(data, "/getsessionkey", auto_now=True)
         if response == "OK":
             self.session_key = self.gae_conn.get_tag("key")
-            self.expires = self.gae_conn.get_tag("expires")
+            self.expires = int(self.gae_conn.get_tag("expires"))
+            self.dump_session_key()
             self.db.update_login_time(self.username)
             self.show_main()
         else:
             self.wTree.get_widget("login_error").set_text(self.gae_conn.error)
+            self.wTre.get_widget("login").set_sensitive(True)
             
         if self.wTree.get_widget("remember_password").get_active():
             self.db.add_user(self.username, self.password)
@@ -111,6 +151,9 @@ class Login(object):
 
         
     def on_login_clicked(self, widget):
+        self.wTree.get_widget("login").set_sensitive(False)
+        while gtk.events_pending():
+            gtk.main_iteration()
         self.username = self.wTree.get_widget("username_entry").get_text()
         self.password = self.wTree.get_widget("password_entry").get_text()
         if not re.findall(r"^([a-fA-F\d]{40})$", self.password):

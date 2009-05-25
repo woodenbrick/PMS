@@ -58,7 +58,7 @@ class UserDB(DB):
         
     def add_user(self, username, password):
         self.cursor.execute("""SELECT * FROM users WHERE username=?""", (username,))
-        if self.cursor.fetchone is None:
+        if self.cursor.fetchone() is None:
             log.info("Creating new user")
             self.cursor.execute("""INSERT INTO users (username, password) VALUES (?, ?)""",
                             (username, password))
@@ -98,6 +98,12 @@ class UserDB(DB):
             query = """SELECT * FROM users WHERE username=%s""" % username
         self.cursor.execute(query)
         return self.cursor.fetchone()
+        
+    def get_users_like(self, name):
+        """Returns users who have a name starting with the given string"""
+        name = name + "%"
+        self.cursor.execute("SELECT username FROM users WHERE username LIKE ?", (name,))
+        return self.cursor.fetchall()
 
 
 class MessageDB(DB):

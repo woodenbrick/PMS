@@ -15,22 +15,60 @@
 #You should have received a copy of the GNU General Public License
 #along with pms.  If not, see http://www.gnu.org/licenses/
 import os
+import time
+import cPickle
 import hashlib
 import gtk
 import gtk.glade
 import pygtk
+import gobject
 
+import logger
+
+log = logger.new_logger("GROUP")
 
 class GroupWindow():
     def __init__(self, parent):
-        
         self.parent = parent
         self.wTree = gtk.glade.XML(self.parent.PROGRAM_DETAILS['glade'] + "group.glade")
         self.wTree.signal_autoconnect(self)
+        self.grouplist_file = self.parent.PROGRAM_DETAILS['home'] + "grouplist_" + self.parent.login.username
+        self.columns = ["name", "owner", "description", "password", "membership"]
+        group_list = self.check_for_old_grouplist()
+        if not group_list:
+            group_list = self.new_grouplist()
+        self.group_liststore = gtk.ListStore(str, str, str, str, str)
+        for item in group_list:
+            self.group_liststore.append(item)
+        self.wTree.get_widget("groupview").set_model(self.group_liststore)
+        self.create_columns()
+        self.timer = gobject.timeout_add(60000, self.update_refresh_button)
+        self.update_refresh_button()
         
-        self.fill_groups()
-        
-    def fill_groups(self):
+    def on_window_destroy(self, widget):
+        gobject.source_remove(self.timer)
+
+    def update_refresh_button(self):
+        diff = int((time.time() - self.mtime) / 60)
+        log.debug("Updating grouplist refresh button")
+        self.wTree.get_widget("refresh_label").set_text("Refresh (last done \n%s minutes ago)" % diff)
+    
+    
+    
+    def check_for_old_grouplist(self):
+        """check for a pickled list for groupliststore and use this instead, along with a warning about
+        its date"""
+        try:
+            f = open(self.grouplist_file, "r")
+            stat = os.stat(self.grouplist_file)
+            self.mtime = float(stat.st_mtime)
+        except IOError:
+            return False
+        return cPickle.load(f)
+
+   
+    
+    def new_grouplist(self, widget=None):
         """Returns all the groups from the server and puts them into a treeview
         we need: a list of all groups a list of the groups the user is already a member of"""
         response = self.parent.gae_conn.app_engine_request(None, "/group/list")
@@ -51,11 +89,11 @@ class GroupWindow():
         print user_groups
         iter = all_groups_tree.getiterator()
         
-        self.group_liststore = gtk.ListStore(str, str, str, str, str)
+        group_list = []
         group = []
-        columns = ["name", "owner", "description", "password", "membership"]
+
         for child in iter:
-            if child.tag in columns:
+            if child.tag in self.columns:
                 if child.tag == "password":
                     group.append(child.attrib["required"])
                     #we need to check if the user is a member of this group
@@ -63,15 +101,23 @@ class GroupWindow():
                         group.append("True")
                     else:
                         group.append("False")
-                    self.group_liststore.append(group)
+                    group_list.append(group)
                     group = []
                 else:
                     group.append(child.text)
-        #perhaps we should cache the liststore?
-        self.wTree.get_widget("groupview").set_model(self.group_liststore)
+        #cache the groupliststore for later use
+        f = open(self.grouplist_file, "w")
+        cPickle.dump(group_list, f)
+        f.close()
+        self.mtime = time.time()
+        return group_list
+    
+    
+
+    def create_columns(self):
         #create columns
-        for i in range(0, len(columns)):
-            col = gtk.TreeViewColumn(columns[i])
+        for i in range(0, len(self.columns)):
+            col = gtk.TreeViewColumn(self.columns[i])
             cell = gtk.CellRendererText()
             col.pack_start(cell, False)
             col.set_attributes(cell, text=i)
@@ -83,6 +129,8 @@ class GroupWindow():
             col.set_spacing(10)
             self.wTree.get_widget("groupview").append_column(col)
     
+    
+    
     def on_groupview_cursor_changed(self, widget):
         """check if user belongs to a group and adjust the join/leave button accordingly"""
         member, group = self.is_member()
@@ -92,6 +140,8 @@ class GroupWindow():
             label = "Join"
         self.wTree.get_widget("group_label").set_text(label)
     
+    
+    
     def is_member(self):
         """Checks the current selection and returns (True, group) if user is a member"""
         model, iter = self.wTree.get_widget("groupview").get_selection().get_selected()
@@ -100,11 +150,15 @@ class GroupWindow():
             return True, model.get_value(iter, 0)
         return False, model.get_value(iter, 0)
     
+    
+    
     def change_membership(self):
         """Change membership status without touching the server"""
         model, iter = self.wTree.get_widget("groupview").get_selection().get_selected()
         val = "True" if model.get_value(iter, 4) == "False" else "False"
         model.set_value(iter, 4, val)
+    
+    
     
     def on_join_leave_group_clicked(self, widget):
         member, group = self.is_member()
@@ -142,10 +196,13 @@ class GroupWindow():
                 self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
             self.wTree.get_widget("password").hide()
             
-            
+    
+    
     def on_create_group_clicked(self, widget):
         response = self.wTree.get_widget("new_dialog").run()
         self.wTree.get_widget("new_dialog").hide()
+    
+    
     
     def on_group_close(self, widget):
         if widget.name == "apply":

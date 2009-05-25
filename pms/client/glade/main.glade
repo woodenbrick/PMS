@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Sun May 24 22:39:02 2009 -->
+<!--Generated with glade3 3.4.5 on Mon May 25 20:45:20 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -36,7 +36,7 @@
       </widget>
     </child>
     <child>
-      <widget class="GtkSeparatorMenuItem" id="&lt;separator&gt;">
+      <widget class="GtkSeparatorMenuItem" id="">
         <property name="visible">True</property>
         <property name="label" translatable="yes">menuitem3</property>
         <property name="use_underline">True</property>
@@ -76,6 +76,7 @@
                         <signal name="activate" handler="check_messages"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="menu-item-image6">
+                            <property name="stock">gtk-missing-image</property>
                           </widget>
                         </child>
                       </widget>

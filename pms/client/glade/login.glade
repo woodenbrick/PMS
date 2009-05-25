@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Mon May 25 13:01:22 2009 -->
+<!--Generated with glade3 3.4.5 on Mon May 25 21:25:58 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="login_window">
     <property name="title" translatable="yes">PMS - Login</property>
     <property name="window_position">GTK_WIN_POS_CENTER</property>
+    <signal name="destroy" handler="on_login_window_destroy"/>
     <child>
       <widget class="GtkVBox" id="vbox4">
         <property name="visible">True</property>
@@ -52,6 +53,8 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="has_focus">True</property>
+                    <signal name="changed" handler="on_username_entry_changed"/>
+                    <signal name="key_press_event" handler="on_entry_key_press_event"/>
                   </widget>
                   <packing>
                     <property name="position">1</property>
@@ -78,6 +81,7 @@
                     <property name="can_focus">True</property>
                     <property name="visibility">False</property>
                     <property name="activates_default">True</property>
+                    <signal name="key_press_event" handler="on_entry_key_press_event"/>
                   </widget>
                   <packing>
                     <property name="position">1</property>
@@ -192,6 +196,7 @@
   <widget class="GtkWindow" id="register_window">
     <property name="title" translatable="yes">MTP-Lastfm - Login</property>
     <property name="window_position">GTK_WIN_POS_CENTER</property>
+    <signal name="destroy" handler="on_login_window_destroy"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>

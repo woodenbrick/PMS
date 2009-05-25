@@ -16,13 +16,13 @@
 #along with pms.  If not, see http://www.gnu.org/licenses/
 
 import os
-
+import cPickle
 import gobject
 import gtk
 import gtk.glade
 import pygtk
 pygtk.require20()
-import cPickle
+
 import libpms
 import db
 import groups
@@ -30,14 +30,18 @@ import time
 import login
 import preferences
 
+
 class PMS(object):
     
     def __init__(self, login_obj):
-        self.login = login_obj
         self.PROGRAM_DETAILS = login_obj.PROGRAM_DETAILS
+        self.wTree = gtk.glade.XML(self.PROGRAM_DETAILS['glade'] + "main.glade")
+        self.wTree.signal_autoconnect(self)
+        #show a loading window so user knows whats happening
+        self.login = login_obj
         self.gae_conn = login_obj.gae_conn
         self.preferences = preferences.Preferences(self.PROGRAM_DETAILS, self.login.username)
-        self.wTree = gtk.glade.XML(self.PROGRAM_DETAILS['glade'] + "main.glade")
+
         self.main_window = self.wTree.get_widget("window")
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
         
@@ -54,9 +58,9 @@ class PMS(object):
             self.wTree.get_widget("menu_" + i).set_image(new_img)
 
         
-        self.wTree.signal_autoconnect(self)
         self.db = db.MessageDB(self.PROGRAM_DETAILS['home'] + "MessageDB_" + self.login.username)
         self.set_groups()
+        
         if not self.fill_groups():
             popup = gtk.MessageDialog(None, gtk.DIALOG_MODAL,
                                   gtk.MESSAGE_INFO, gtk.BUTTONS_YES_NO,
@@ -71,7 +75,7 @@ class PMS(object):
         self.fill_messages()
         #set a timer to check messages
         self.check_messages()
-        self.timer = gobject.timeout_add(10000, self.check_messages)
+        self.check_timer = gobject.timeout_add(10000, self.check_messages)
     
     
     def set_groups(self, refresh=False):
@@ -90,9 +94,7 @@ class PMS(object):
         return self.user_groups
    
     
-    def check_messages(self, logout=False):
-        if logout:
-            return True
+    def check_messages(self):
         data = {"time" : self.last_time,
                 "groups" : ",".join(self.user_groups)}
         response = self.gae_conn.app_engine_request(data, "/msg/check")
@@ -122,9 +124,9 @@ class PMS(object):
         gtk.main_quit()
 
     def on_logout_clicked(self, widget):
-        self.check_messages(logout=True)
+        gobject.source_remove(self.check_timer)
         self.wTree.get_widget("window").destroy()
-        login.Login(self.PROGRAM_DETAILS)
+        login.Login(self.PROGRAM_DETAILS, new_user=True)
     
     def activate_menu(self, *args):
         if self.main_window.props.visible:
@@ -174,9 +176,7 @@ class PMS(object):
         liststore = gtk.ListStore(str)
         self.group_box.set_model(liststore)
         self.wTree.get_widget("combo_container").pack_start(self.group_box)
-        
-        response = self.gae_conn.app_engine_request(None, "/usr/groups/%s" % self.login.username)
-        items = self.gae_conn.get_tags("name")
+        items = self.set_groups()
         for item in items:
             self.group_box.append_text(item)
         self.group_box.set_active(0)
