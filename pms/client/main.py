@@ -75,23 +75,8 @@ class PMS(object):
         self.fill_messages()
         #set a timer to check messages
         self.check_messages()
-        self.check_timer = gobject.timeout_add(10000, self.check_messages)
+        self.check_timer = gobject.timeout_add(60000, self.check_messages)
     
-    
-    def set_groups(self, refresh=False):
-        """set groups for the user"""
-        if refresh is False:
-            try:
-                f = open(self.PROGRAM_DETAILS['home'] + "%s_user_groups" % self.login.username, "r")
-                self.user_groups = cPickle.load(f)
-                return self.user_groups
-            except IOError:
-                pass
-        response = self.gae_conn.app_engine_request(None, "/usr/groups/%s" % self.login.username)
-        self.user_groups = self.gae_conn.get_tags("name")
-        f = open(self.PROGRAM_DETAILS['home'] + "%s_user_groups" % self.login.username, "w")
-        cPickle.dump(self.user_groups, f)
-        return self.user_groups
    
     
     def check_messages(self):
@@ -171,19 +156,49 @@ class PMS(object):
         buffer.set_text("")
         self.check_messages()
         
-    def fill_groups(self):
-        self.group_box = gtk.combo_box_new_text()
+    def set_groups(self, refresh=False):
+        """set groups for the user"""
+        if refresh is False:
+            try:
+                f = open(self.PROGRAM_DETAILS['home'] + "%s_user_groups" % self.login.username, "r")
+                self.user_groups = cPickle.load(f)
+                return self.user_groups
+            except IOError:
+                pass
+        response = self.gae_conn.app_engine_request(None, "/usr/groups/%s" % self.login.username)
+        self.user_groups = self.gae_conn.get_tags("name")
+        f = open(self.PROGRAM_DETAILS['home'] + "%s_user_groups" % self.login.username, "w")
+        cPickle.dump(self.user_groups, f)
+        return self.user_groups
+    
+    def add_group(self, group_name, add=True):
+        """Add/remove a single new group to the users groups"""
+        if add:
+            self.user_groups.insert(0, group_name)
+        else:
+            self.user_groups.remove(group_name)
+        f = open(self.PROGRAM_DETAILS['home'] + "%s_user_groups" % self.login.username, "w")
+        cPickle.dump(self.user_groups, f)
+        self.fill_groups(regenerate=True)
+        return self.user_groups
+        
+        
+    
+    def fill_groups(self, regenerate=False):
+        if not regenerate:
+            self.group_box = gtk.combo_box_new_text()
+            self.set_groups()
+        if len(self.user_groups) == 0:
+            return False
         liststore = gtk.ListStore(str)
         self.group_box.set_model(liststore)
         self.wTree.get_widget("combo_container").pack_start(self.group_box)
-        items = self.set_groups()
-        for item in items:
+        for item in self.user_groups:
             self.group_box.append_text(item)
         self.group_box.set_active(0)
         self.group_box.show()
-        if len(items) == 0:
-            return False
         return True
+
     
     def show_groups(self, widget):
         groups.GroupWindow(self)

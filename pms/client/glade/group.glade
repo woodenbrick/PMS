@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Mon May 25 20:58:46 2009 -->
+<!--Generated with glade3 3.4.5 on Tue May 26 21:22:34 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="window">
+    <property name="width_request">500</property>
     <property name="visible">True</property>
     <property name="title" translatable="yes">Groups</property>
     <property name="window_position">GTK_WIN_POS_CENTER</property>
@@ -27,7 +28,7 @@
                 <property name="height_request">400</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <signal name="cursor_changed" handler="on_groupview_cursor_changed"/>
+                <signal name="cursor_changed" handler="change_join_button"/>
               </widget>
             </child>
           </widget>
@@ -112,7 +113,7 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="response_id">0</property>
-                <signal name="clicked" handler="new_grouplist"/>
+                <signal name="clicked" handler="refresh_grouplist"/>
                 <child>
                   <widget class="GtkHBox" id="hbox7">
                     <property name="visible">True</property>
@@ -297,6 +298,7 @@
               <widget class="GtkEntry" id="join_group_pass">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <signal name="key_press_event" handler="on_group_pass_keypress"/>
               </widget>
               <packing>
                 <property name="position">1</property>

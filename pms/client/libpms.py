@@ -59,7 +59,10 @@ class AppEngineConnection(object):
             if i.tag == tag:
                 l.append(i.text.strip())
         return l
-
+    
+    def set_password(self, password):
+        self.password = password
+    
     def app_engine_request(self, data, mapping, auto_now=False):
         """For get requests, set data to None"""
         if data is None:
@@ -83,7 +86,23 @@ class AppEngineConnection(object):
             log.error(e)
             self.error = str(e)
             return "URLError"
-        return self.check_xml_response(request)
+        
+        response = self.check_xml_response(request)
+        if response == "BADAUTH":
+            log.info("Outdated sessionkey, attempting renewal")
+            #outdated sessionkey, get a newone then redo the request
+            sess_data = {"name" : self.default_values['name'],
+                         "password" : self.password}
+            new_response = self.app_engine_request(sess_data, "/sessionkey", auto_now=True)
+            if new_response == "OK":
+                log.info("Redoing defered call")
+                self.default_values["session_key"] = self.gae_conn.get_tag("key")
+                #expires = int(self.gae_conn.get_tag("expires"))
+                #we should dump the file as well, but current we cant
+                #should move login function dump here
+                #now we redo the old request
+                response = self.app_engine_request(data, mapping)
+        return response
         
     def send_avatar(self, filename):
         """A special function for this, since it requires images to be sent which

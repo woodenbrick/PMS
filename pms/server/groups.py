@@ -68,7 +68,7 @@ class Join(webapp.RequestHandler):
         if group.password_required:
             password = hashlib.sha1(self.request.get("password") + group.salt).hexdigest()
             if password != group.password:
-                return server.response(self, {"status" : "BADAUTH"})
+                return server.response(self, {"status" : "BADPASS"})
         member = models.GroupMember(group=group, user=user)
         member.put()
         return server.response(self)

@@ -67,6 +67,7 @@ class Login(object):
     def show_main(self):
         self.gae_conn.default_values = { "name" : self.username,
                                          "session_key" : self.session_key}
+        self.gae_conn.set_password(self.password)
         main.PMS(self)
         self.wTree.get_widget("login_window").hide()
         
