@@ -39,10 +39,11 @@ class GroupWindow():
         if not self.group_list:
             self.group_list = self.new_grouplist()
         self.group_liststore = gtk.ListStore(str, str, str, bool, bool, gtk.gdk.Pixbuf, gtk.gdk.Pixbuf)
-        for item in self.group_list:
-            img_pass = self.create_pixbuf(value=item[3], member=False)
-            img_member = self.create_pixbuf(value=item[4])
-            self.group_liststore.append(item + [img_pass, img_member])
+        if self.group_list is not None:
+            for item in self.group_list:
+                img_pass = self.create_pixbuf(value=item[3], member=False)
+                img_member = self.create_pixbuf(value=item[4])
+                self.group_liststore.append(item + [img_pass, img_member])
         self.wTree.get_widget("groupview").set_model(self.group_liststore)
         self.create_columns()
         self.timer = gobject.timeout_add(60000, self.update_refresh_button)
@@ -149,7 +150,8 @@ class GroupWindow():
                 col.set_attributes(cell, pixbuf=i)
             else:
                 col.set_attributes(cell, text=i)
-                
+            if i == 3 or i == 4:
+                col.set_visible(False)
             col.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
             col.set_min_width(30)
             col.set_max_width(250)
