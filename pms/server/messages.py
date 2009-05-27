@@ -66,7 +66,7 @@ class Check(webapp.RequestHandler):
         # lastmsg-[groupname]
         #we can checkthis and if it is further in the past than our last check we
         #skip over this group
-        
+
         all_messages = []
         for group in groups:
             #lmsg = memcache.get("lastmsg-" + group)
