@@ -107,7 +107,10 @@ class PMS(object):
                 message[i.tag] = int(i.text)
                 self.db.add_new(message)
                 #add to liststore
-                self.messages_liststore.prepend([message["user"] + message["group"] + message["data"] + str(message["date"])])
+                self.messages_liststore.prepend([message["user"] + "\n" +
+                                                 message["group"] + "\n" +
+                                                 message["data"] + "\n" +
+                                                 str(message["date"])])
                 msg_count += 1
                 continue
             message[i.tag] = i.text
