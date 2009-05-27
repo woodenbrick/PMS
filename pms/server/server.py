@@ -41,7 +41,7 @@ def is_valid_key(handler_obj):
     user = models.User.get_by_key_name(user_data['name'])
     sess = models.Session.all().filter("user =", user).get()
     try:
-        if sess.session_key == user_data['session_key'] and sess.ip == user_data['ip']:
+        if sess.session_key == user_data['session_key'] and sess.ip == user_data['ip'] and sess.expires > time.time():
             return user, user_data
     except AttributeError:
         #If there was no sessionkey   
@@ -90,7 +90,7 @@ class GetSessionKey(webapp.RequestHandler):
         st = string.ascii_letters + string.digits
         while len(session_key) < 20:
             session_key.append(random.choice(st))
-        expires = int(time.time() + 70)
+        expires = int(time.time() + 1000)
         session_key = "".join(session_key)
         try:
             sess = models.Session.get_by_key_name(user.name)
@@ -107,7 +107,7 @@ class GetSessionKey(webapp.RequestHandler):
                         "session_key" : session_key,
                         "expires" : expires}
         response(self, temp_values, template="session")
-
+    
 
 
 application = webapp.WSGIApplication([

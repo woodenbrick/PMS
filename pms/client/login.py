@@ -53,6 +53,7 @@ class Login(object):
             self.password = user_details[1]
             self.session_key, self.expires = self.check_for_session_key()
             if self.session_key and user_details[3] != 0:
+                #we should check if the server is available here
                 self.show_main()
             else:
                 self.wTree.get_widget("username_entry").set_text(self.username)

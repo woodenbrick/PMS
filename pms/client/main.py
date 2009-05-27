@@ -29,6 +29,7 @@ import groups
 import time
 import login
 import preferences
+import threading
 
 
 class PMS(object):
@@ -75,19 +76,30 @@ class PMS(object):
         self.fill_messages()
         #set a timer to check messages
         self.check_messages()
-        self.check_timer = gobject.timeout_add(60000, self.check_messages)
+        self.check_timer = gobject.timeout_add(5000, self.check_messages)
     
-   
+    def update_status_bar(self, message, time=False):
+        if time:
+            self.wTree.get_widget("last_time").set_text(message)
+        else:
+            self.wTree.get_widget("main_error").set_text(message)
+        while gtk.events_pending():
+            gtk.main_iteration()
+    
+    def check_key(self, widget, key):
+        if key.keyval == 65293:
+            self.on_send_message_clicked(widget) 
     
     def check_messages(self):
         data = {"time" : self.last_time,
                 "groups" : ",".join(self.user_groups)}
         response = self.gae_conn.app_engine_request(data, "/msg/check")
         if response == "OK":
-            self.wTree.get_widget("main_error").set_text("Last update: " + str(time.time()))
+            self.update_status_bar("")
+            self.update_status_bar("Last update: " + time.strftime("%I:%M:%S %p",
+                                                    time.localtime(time.time())), time=True)
         else:
-            print response
-            self.wTree.get_widget("main_error").set_text("Error: " + self.gae_conn.error)
+            return self.update_status_bar(self.gae_conn.error)
         message = {}
         msg_count = 0
         for i in self.gae_conn.iter:
@@ -95,7 +107,7 @@ class PMS(object):
                 message[i.tag] = int(i.text)
                 self.db.add_new(message)
                 #add to liststore
-                self.messages_liststore.prepend([message["user"], message["group"], message["data"], message["date"]])
+                self.messages_liststore.prepend([message["user"] + message["group"] + message["data"] + str(message["date"])])
                 msg_count += 1
                 continue
             message[i.tag] = i.text
@@ -129,32 +141,39 @@ class PMS(object):
 
     def fill_messages(self):
         treeview = self.wTree.get_widget("message_view")
-        self.messages_liststore = gtk.ListStore(str, str, str, str)
+        self.messages_liststore = gtk.ListStore(str)
         treeview.set_model(self.messages_liststore)
         messages = self.db.message_list()
         for m in messages:
-            self.messages_liststore.append(m)
-        for column in range(0, 4):
-            col = gtk.TreeViewColumn("Blank")
-            cell = gtk.CellRendererText()
-            col.pack_start(cell, False)
-            col.set_attributes(cell, text=column)
-            col.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-            col.set_min_width(30)
-            col.set_max_width(250)
-            col.set_resizable(True)
-            col.set_spacing(10)
-            treeview.append_column(col)
+            mess = [m[0] + "\n" + m[1] + "\n" + m[2] + "\n" + "\n" + str(m[3])]
+            self.messages_liststore.append(mess)
+        col = gtk.TreeViewColumn("")
+        cell = gtk.CellRendererText()
+        col.pack_start(cell, False)
+        col.set_attributes(cell, text=0)
+        col.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+        col.set_min_width(100)
+        col.set_max_width(250)
+        col.set_resizable(True)
+        col.set_spacing(10)
+        treeview.append_column(col)
         
     def on_send_message_clicked(self, widget):
         """Sends a new message to the server"""
+        self.wTree.get_widget("send_message").set_sensitive(False)
+        self.update_status_bar("Sending message...")
         buffer = self.wTree.get_widget("new_message").get_buffer()
         start, end = buffer.get_bounds()
         data = {'message' : buffer.get_text(start, end),
         'group' : self.group_box.get_active_text()}
         response = self.gae_conn.app_engine_request(data, "/msg/add")
-        buffer.set_text("")
-        self.check_messages()
+        self.wTree.get_widget("send_message").set_sensitive(True)
+        if response == "OK":
+            buffer.set_text("")
+            self.check_messages()
+        else:
+            self.update_status_bar(self.gae_conn.error)
+
         
     def set_groups(self, refresh=False):
         """set groups for the user"""

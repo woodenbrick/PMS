@@ -286,16 +286,25 @@ class GroupWindow():
             self.group_list.append(group_details)
             self.update_pickled_grouplist()
             self.auto_message("created", group_details[0])
+            self.parent.add_group(group_details[0], add=True)
+            self.parent.group_box.set_active(0)
             return
         model, iter = self.wTree.get_widget("groupview").get_selection().get_selected()
         if join:
             self.parent.add_group(group_details[0], add=True)
             self.parent.group_box.set_active(0)
             model.set_value(iter, 6, self.create_pixbuf(True))
+
         else:
             self.parent.add_group(group_details[0], add=False)
             model.set_value(iter, 6, self.create_pixbuf(False))
-        
+            
+        for group in self.group_list:
+            if group[0] == group_details[0]:
+                group[4] = group_details[4]
+                break
+        self.update_pickled_grouplist()
+
 
 
     def auto_message(self, action, group):

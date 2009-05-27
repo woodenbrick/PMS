@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Mon May 25 20:45:20 2009 -->
+<!--Generated with glade3 3.4.5 on Wed May 27 15:42:11 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -239,6 +239,11 @@
                 <property name="height_request">50</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="has_focus">True</property>
+                <property name="wrap_mode">GTK_WRAP_WORD</property>
+                <property name="left_margin">2</property>
+                <property name="right_margin">2</property>
+                <signal name="key_press_event" handler="check_key"/>
               </widget>
             </child>
             <child>
@@ -292,6 +297,16 @@
           </widget>
           <packing>
             <property name="position">4</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkLabel" id="last_time">
+            <property name="visible">True</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">5</property>
           </packing>
         </child>
       </widget>

@@ -23,10 +23,13 @@ import os
 import sys
 import optparse
 import cPickle
+
+
 launch_dir = os.path.dirname(__file__)
 src_dir = os.path.realpath(os.path.join(launch_dir, "..", "pms", "client"))
 if os.path.exists(src_dir + os.sep + "libpms.py"):
     sys.path.insert(0, src_dir)
+
 import libpms
 import main
 import login

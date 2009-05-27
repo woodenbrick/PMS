@@ -23,6 +23,9 @@ import string
 import hashlib
 import time
 import cPickle
+import threading
+import Queue
+
 from xml.etree import ElementTree as ET
 import logger
 log = logger.new_logger("LIBPMS")
@@ -31,10 +34,30 @@ from poster.encode import multipart_encode
 from poster.streaminghttp import register_openers
 
 
+class ThreadedAppEngineRequest(threading.Thread):
+    
+    def __init__(self, gae_conn_obj, data, mapping, auto_now, queue):
+        self.gae_conn_obj = gae_conn_obj
+        self.data = data
+        self.mapping = mapping
+        self.auto_now = auto_now
+        self.queue = queue
+        threading.Thread.__init__(self)
+        
+    def run(self):
+        print "in thread"
+        response = self.gae_conn_obj.app_engine_request(self.data, self.mapping, self.auto_now)
+        print "thread done"
+        print response
+        self.queue.put(response)
+
+
 class AppEngineConnection(object):
     def __init__(self, server):
         self.url = server
         self.default_values = {}
+        self.error = ""
+        self.queue = Queue.Queue()
         
     def check_xml_response(self, doc):
         """Check if our request was valid"""
@@ -62,6 +85,13 @@ class AppEngineConnection(object):
     
     def set_password(self, password):
         self.password = password
+    
+    def threaded_app_engine_request(self, data, mapping, auto_now=False):
+        request = ThreadedAppEngineRequest(self, data, mapping, auto_now, self.queue)
+        request.daemon = True
+        request.start()
+        response = self.queue.get()
+        return response
     
     def app_engine_request(self, data, mapping, auto_now=False):
         """For get requests, set data to None"""
@@ -93,10 +123,10 @@ class AppEngineConnection(object):
             #outdated sessionkey, get a newone then redo the request
             sess_data = {"name" : self.default_values['name'],
                          "password" : self.password}
-            new_response = self.app_engine_request(sess_data, "/sessionkey", auto_now=True)
+            new_response = self.app_engine_request(sess_data, "/getsessionkey", auto_now=True)
             if new_response == "OK":
                 log.info("Redoing defered call")
-                self.default_values["session_key"] = self.gae_conn.get_tag("key")
+                self.default_values["session_key"] = self.get_tag("key")
                 #expires = int(self.gae_conn.get_tag("expires"))
                 #we should dump the file as well, but current we cant
                 #should move login function dump here
