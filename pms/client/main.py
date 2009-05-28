@@ -31,6 +31,8 @@ import login
 import preferences
 import threading
 
+import logger
+log = logger.new_logger("MAIN")
 
 class PMS(object):
     
@@ -75,6 +77,7 @@ class PMS(object):
         self.last_time = self.db.last_date()
         self.fill_messages()
         #set a timer to check messages
+        self.check_in_progress = False
         self.check_messages()
         self.check_timer = gobject.timeout_add(5000, self.check_messages)
     
@@ -91,6 +94,11 @@ class PMS(object):
             self.on_send_message_clicked(widget) 
     
     def check_messages(self):
+        #prevent check from multiple instances running
+        if self.check_in_progress:
+            log.info("Check in progress, cancelling")
+            return True
+        self.check_in_progress = True
         data = {"time" : self.last_time,
                 "groups" : ",".join(self.user_groups)}
         response = self.gae_conn.app_engine_request(data, "/msg/check")
@@ -100,6 +108,7 @@ class PMS(object):
                                                     time.localtime(time.time())), time=True)
         else:
             return self.update_status_bar(self.gae_conn.error)
+        #self.last_time = time.time()
         message = {}
         msg_count = 0
         for i in self.gae_conn.iter:
@@ -117,6 +126,7 @@ class PMS(object):
         if msg_count != 0:
             #we have new messages, lets update the last_time
             self.last_time = self.db.last_date()
+        self.check_in_progress = False    
         return True
 
     def gtk_main_quit(self, widget=None):

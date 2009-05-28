@@ -33,16 +33,18 @@ class New(webapp.RequestHandler):
         """
         user, user_data = server.is_valid_key(self)
         if user:
-            group = self.request.get("group")
+            group_name = self.request.get("group")
             message = self.request.get("message")
-            if message == "" or group == "":
+            if message == "" or group_name == "":
                 return server.response(self, {"status" : "MISSINGVALUES"})
-            group = models.Group.get_by_key_name(group)
+            group = models.Group.get_by_key_name(group_name)
             member = models.GroupMember.all().filter("group =", group).filter("user =", user).get()
             if member is None:
                 return server.response(self, {"status" : "NONMEMBER"})
             mess = models.Message(user=user, group=group, comment=message, date=int(time.time()))
             mess.put()
+            #cache this for other users
+            memcache.set(group_name, mess.date)
             server.response(self)
         else:
             server.response(self, {"status" : "BADAUTH"})
@@ -69,12 +71,12 @@ class Check(webapp.RequestHandler):
 
         all_messages = []
         for group in groups:
-            #lmsg = memcache.get("lastmsg-" + group)
-            #if lmsg is not None and lsmg < last_time:
-            #    continue
-            
+            lmsg = memcache.get(group)
+            if lmsg is not None and lsmg < last_time:
+                continue
             g = models.Group.get_by_key_name(group)
             messages = models.Message.all().filter("group =", g).filter("date >", last_time).fetch(100)
+            memcache.set(group, messages[-1].date)
             all_messages.extend(messages)  
         server.response(self, values={"status" : "OK", "messages" : all_messages}, template="messages")
 
