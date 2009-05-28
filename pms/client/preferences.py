@@ -80,6 +80,7 @@ class PreferencesWindow(object):
         self.preferences['popup'] = self.wTree.get_widget("popup").get_active()
         #check if avatar has changed
         if self.new_avatar:
+            os.remove(self.preferences['avatar'])
             os.rename(os.path.join(self.program_details['home'], "thumbnails",
                       "_temp.thumbnail"), self.preferences['avatar'])
             response = self.parent.gae_conn.send_avatar(thumb)
