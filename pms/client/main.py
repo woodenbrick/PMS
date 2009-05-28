@@ -107,10 +107,10 @@ class PMS(object):
                 message[i.tag] = int(i.text)
                 self.db.add_new(message)
                 #add to liststore
-                self.messages_liststore.prepend([message["user"] + "\n" +
+                self.messages_liststore.prepend(["from " + message["user"] + " to " +
                                                  message["group"] + "\n" +
-                                                 message["data"] + "\n" +
-                                                 str(message["date"])])
+                                                 "sent at: " + str(message['date']) + "\n"
+                                                 + message["data"] + "\n"])
                 msg_count += 1
                 continue
             message[i.tag] = i.text
@@ -147,9 +147,11 @@ class PMS(object):
         self.messages_liststore = gtk.ListStore(str)
         treeview.set_model(self.messages_liststore)
         messages = self.db.message_list()
-        for m in messages:
-            mess = [m[0] + "\n" + m[1] + "\n" + m[2] + "\n" + "\n" + str(m[3])]
-            self.messages_liststore.append(mess)
+        for message in messages:
+            self.messages_liststore.append(["from " + message[0] + " to " +
+                                                 message[1] + "\n" +
+                                                 "sent at: " + str(message[3]) + "\n"
+                                                 + message[2] + "\n"])
         col = gtk.TreeViewColumn("")
         cell = gtk.CellRendererText()
         col.pack_start(cell, False)

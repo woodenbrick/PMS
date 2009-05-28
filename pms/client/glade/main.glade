@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Wed May 27 15:42:11 2009 -->
+<!--Generated with glade3 3.4.5 on Wed May 27 23:19:57 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -205,7 +205,11 @@
             <child>
               <widget class="GtkTreeView" id="message_view">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="headers_visible">False</property>
+                <property name="headers_clickable">False</property>
+                <property name="rules_hint">True</property>
+                <property name="enable_search">False</property>
+                <property name="enable_grid_lines">GTK_TREE_VIEW_GRID_LINES_HORIZONTAL</property>
               </widget>
             </child>
           </widget>
