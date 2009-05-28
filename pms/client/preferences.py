@@ -63,7 +63,7 @@ class PreferencesWindow(object):
         response = self.file_selection.run()
         if response == gtk.RESPONSE_OK:
             #create a thumbnail
-            from PIL import Image
+            import Image
             img = Image.open(self.file_selection.get_filename())
             print img.format, img.size, img.mode
             img.thumbnail((64, 64))
@@ -83,7 +83,7 @@ class PreferencesWindow(object):
             os.remove(self.preferences['avatar'])
             os.rename(os.path.join(self.program_details['home'], "thumbnails",
                       "_temp.thumbnail"), self.preferences['avatar'])
-            response = self.parent.gae_conn.send_avatar(thumb)
+            response = self.parent.gae_conn.send_avatar(self.preferences['avatar'])
             if response != "OK":
                 self.wTree.get_widget("preference_error").set_text(self.parent.gae_conn.error)
                 return

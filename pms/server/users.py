@@ -119,7 +119,7 @@ class ChangeAvatar(webapp.RequestHandler):
     def post(self):
         user, user_data = server.is_valid_key(self)
         if not user:
-            return server.response(self, user_data)
+            return server.response(self, {"status" : "NOTUSER"})
         users_avatar = models.UserAvatar.get_by_key_name(user.name)
         if users_avatar is None:
             users_avatar = models.UserAvatar(key_name=user.name)
