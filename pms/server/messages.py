@@ -37,14 +37,23 @@ class New(webapp.RequestHandler):
             message = self.request.get("message")
             if message == "" or group_name == "":
                 return server.response(self, {"status" : "MISSINGVALUES"})
-            group = models.Group.get_by_key_name(group_name)
-            member = models.GroupMember.all().filter("group =", group).filter("user =", user).get()
+            group = memcache.get("group-" + group_name)
+            if group is None:
+                group = models.Group.get_by_key_name(group_name)
+            if group is None:
+                return server.response(self, {"status" : "NOTGROUP"})
+            member = memcache.get("member-" + user.name + group.name)
+            if member is None:
+                member = models.GroupMember.all().filter("group =", group).filter("user =", user).get()
             if member is None:
                 return server.response(self, {"status" : "NONMEMBER"})
+            #cache member and group
+            memcache.set("member-" + user.name + group.name, member)
+            memcache.set("group-" + group.name, group)
             mess = models.Message(user=user, group=group, comment=message, date=int(time.time()))
             mess.put()
-            #cache this for other users
-            memcache.set(group_name, mess.date)
+            #cache this date for other users
+            memcache.set("message-" + user.name, mess.date)
             server.response(self)
         else:
             server.response(self, {"status" : "BADAUTH"})
@@ -60,23 +69,16 @@ class Check(webapp.RequestHandler):
         if not user:
             return server.response(self, {"status" : "BADAUTH"})
         last_time = int(float(self.request.get("time")))
-        if self.request.get("groups") == "":
-            return server.response(self, {"status" : "MISSINGVALUES"})
-        groups = self.request.get("groups").split(",")
-        #use memcache here
-        #lets save the last message sent to a group in a variable
-        # lastmsg-[groupname]
-        #we can checkthis and if it is further in the past than our last check we
-        #skip over this group
-
+        lmsg = memcache.get("message-" + user.name)
+        if lmsg is not None and lmsg <= last_time:
+            #no new messages
+            return server.response(self)
+        #otherwise, lets memcache with the last_time given
+        memcache.set("message-" + user.name, last_time)
+        membership = models.GroupMember.all().filter("user =", user)
         all_messages = []
-        for group in groups:
-            lmsg = memcache.get(group)
-            if lmsg is not None and lsmg < last_time:
-                continue
-            g = models.Group.get_by_key_name(group)
-            messages = models.Message.all().filter("group =", g).filter("date >", last_time).fetch(100)
-            memcache.set(group, messages[-1].date)
+        for member in membership:
+            messages = models.Message.all().filter("group =", member.group).filter("date >", last_time).fetch(100)
             all_messages.extend(messages)  
         server.response(self, values={"status" : "OK", "messages" : all_messages}, template="messages")
 

@@ -67,7 +67,8 @@ class PreferencesWindow(object):
             img = Image.open(self.file_selection.get_filename())
             print img.format, img.size, img.mode
             img.thumbnail((64, 64))
-            thumbnail = self.program_details['home'] + "temp.thumbnail"
+            thumbnail = os.path.join(self.program_details['home'], "thumbnails",
+                                    "_temp.thumbnail")
             img.save(thumbnail, img.format)
             self.wTree.get_widget("avatar").set_from_file(thumbnail)
             self.new_avatar = True
@@ -79,16 +80,13 @@ class PreferencesWindow(object):
         self.preferences['popup'] = self.wTree.get_widget("popup").get_active()
         #check if avatar has changed
         if self.new_avatar:
-            thumb = self.program_details['home'] + self.parent.login.username + ".thumbnail"
-            os.rename(self.program_details['home'] + "temp.thumbnail", thumb)
+            os.rename(os.path.join(self.program_details['home'], "thumbnails",
+                      "_temp.thumbnail"), self.preferences['avatar'])
             response = self.parent.gae_conn.send_avatar(thumb)
             if response != "OK":
                 self.wTree.get_widget("preference_error").set_text(self.parent.gae_conn.error)
-                self.preferences["avatar"] = self.program_details['images'] + "avatar-default.png"
                 return
-            else:
-                self.preferences['avatar'] = thumb
-                self.parent.preferences.save_options()
+        self.parent.preferences.save_options()
         self.wTree.get_widget("window").destroy()
 
 
@@ -108,7 +106,8 @@ class Preferences(object):
     def load_defaults(self):
         self.preferences = {
             "msg_check" : 1,
-            "avatar" : self.program_details['images'] + "avatar-default.png",
+            "avatar" : os.path.join(self.program_details['home'], "thumbnails",
+                                    self.username) + ".thumbnail",
             "popup" : True
         }
     

@@ -22,7 +22,7 @@ import gtk
 import gtk.glade
 import pygtk
 pygtk.require20()
-
+import Image
 import libpms
 import db
 import groups
@@ -80,35 +80,54 @@ class PMS(object):
         self.check_in_progress = False
         self.check_messages()
         self.check_timer = gobject.timeout_add(5000, self.check_messages)
-    
+        self.avatar_timer = gobject.timeout_add(20000, self.retrieve_avatar_from_server)
+        self.retrieve_avatar_from_server()
+        
     def update_status_bar(self, message, time=False):
         if time:
             self.wTree.get_widget("last_time").set_text(message)
         else:
             self.wTree.get_widget("main_error").set_text(message)
-        while gtk.events_pending():
-            gtk.main_iteration()
     
     def check_key(self, widget, key):
         if key.keyval == 65293:
             self.on_send_message_clicked(widget) 
-    
+
+
+    def on_send_message_clicked(self, widget):
+        """Sends a new message to the server"""
+        self.wTree.get_widget("send_message").set_sensitive(False)
+        self.update_status_bar("Sending message...")
+        buffer = self.wTree.get_widget("new_message").get_buffer()
+        start, end = buffer.get_bounds()
+        data = {'message' : buffer.get_text(start, end),
+        'group' : self.group_box.get_active_text()}
+        response = self.gae_conn.app_engine_request(data, "/msg/add")
+        self.wTree.get_widget("send_message").set_sensitive(True)
+        if response == "OK":
+            buffer.set_text("")
+            self.update_status_bar("Message sent")
+            self.check_messages()
+        else:
+            self.update_status_bar(self.gae_conn.error)
+            
+
     def check_messages(self):
         #prevent check from multiple instances running
         if self.check_in_progress:
             log.info("Check in progress, cancelling")
             return True
         self.check_in_progress = True
-        data = {"time" : self.last_time,
-                "groups" : ",".join(self.user_groups)}
+        data = {"time" : self.last_time}
         response = self.gae_conn.app_engine_request(data, "/msg/check")
         if response == "OK":
             self.update_status_bar("")
             self.update_status_bar("Last update: " + time.strftime("%I:%M:%S %p",
                                                     time.localtime(time.time())), time=True)
         else:
-            return self.update_status_bar(self.gae_conn.error)
-        #self.last_time = time.time()
+            self.check_in_progress = False
+            self.update_status_bar(self.gae_conn.error)
+            return True
         message = {}
         msg_count = 0
         for i in self.gae_conn.iter:
@@ -116,10 +135,11 @@ class PMS(object):
                 message[i.tag] = int(i.text)
                 self.db.add_new(message)
                 #add to liststore
-                self.messages_liststore.prepend(["from " + message["user"] + " to " +
+                self.messages_liststore.prepend([self.get_avatar(message["user"]),
+                                                 "from " + message["user"] + " to " +
                                                  message["group"] + "\n" +
                                                  "sent at: " + str(message['date']) + "\n"
-                                                 + message["data"] + "\n"])
+                                                 + message["data"] + "\n", message["user"]])
                 msg_count += 1
                 continue
             message[i.tag] = i.text
@@ -150,22 +170,73 @@ class PMS(object):
                                     func=gtk.status_icon_position_menu,
                                         button=args[1], activate_time=args[2],
                                         data=self.tray_icon)
+    
+    def get_avatar(self, username):
+        """Takes a username and returns a pixbuf of their avatar
+        or the default if none found"""
+        avatar_path = os.path.join(self.PROGRAM_DETAILS['home'], "thumbnails",
+                                   username + ".thumbnail")
+        if os.path.exists(avatar_path):
+            return gtk.gdk.pixbuf_new_from_file(avatar_path)
+        else:
+            return gtk.gdk.pixbuf_new_from_file(self.PROGRAM_DETAILS['images'] + "avatar-default.png")
 
+
+    
+    def retrieve_avatar_from_server(self):
+        """we will check the server for avatars if our avatar on file is
+        older than 2 hours."""
+        max_diff = 60
+        log.info("Checking for new avatars")
+        users = self.db.cursor.execute("""SELECT DISTINCT username from messages""").fetchall()
+        for user in users:
+            log.debug("Checking %s's avatar" % user[0])
+            pic = os.path.join(self.PROGRAM_DETAILS['home'], "thumbnails", user[0]) + ".thumbnail"
+            
+            try:
+                stat_time = os.stat(pic).st_mtime
+                check = True if time.time() - stat_time > max_diff else False
+            except OSError:
+                check = True
+            if check:
+                log.info("Outdated avatar, downloading")
+                response = self.gae_conn.app_engine_request(data=None, mapping="/usr/%s/avatar" % user[0],
+                                                            get_avatar=pic)
+                self.messages_liststore
+            else:
+                log.debug("Avatar current")
+            #update the main screen with new thumbs
+            for row in self.messages_liststore:
+                if row[2] == user[0]:
+                    row[0] = gtk.gdk.pixbuf_new_from_file(pic)
+        return True
+    
 
     def fill_messages(self):
         treeview = self.wTree.get_widget("message_view")
-        self.messages_liststore = gtk.ListStore(str)
+        self.messages_liststore = gtk.ListStore(gtk.gdk.Pixbuf, str, str)
         treeview.set_model(self.messages_liststore)
         messages = self.db.message_list()
         for message in messages:
-            self.messages_liststore.append(["from " + message[0] + " to " +
+            self.messages_liststore.append([self.get_avatar(message[0]), "from " + message[0] + " to " +
                                                  message[1] + "\n" +
                                                  "sent at: " + str(message[3]) + "\n"
-                                                 + message[2] + "\n"])
-        col = gtk.TreeViewColumn("")
+                                                 + message[2] + "\n", message[0]])
+        col = gtk.TreeViewColumn("Pic")
+        cell = gtk.CellRendererPixbuf()
+        col.pack_start(cell, False)
+        col.set_attributes(cell, pixbuf=0)
+        col.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+        col.set_min_width(64)
+        col.set_max_width(64)
+        col.set_resizable(False)
+        col.set_spacing(10)
+        treeview.append_column(col)
+        
+        col = gtk.TreeViewColumn("Text")
         cell = gtk.CellRendererText()
         col.pack_start(cell, False)
-        col.set_attributes(cell, text=0)
+        col.set_attributes(cell, text=1)
         col.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
         col.set_min_width(100)
         col.set_max_width(250)
@@ -173,21 +244,19 @@ class PMS(object):
         col.set_spacing(10)
         treeview.append_column(col)
         
-    def on_send_message_clicked(self, widget):
-        """Sends a new message to the server"""
-        self.wTree.get_widget("send_message").set_sensitive(False)
-        self.update_status_bar("Sending message...")
-        buffer = self.wTree.get_widget("new_message").get_buffer()
-        start, end = buffer.get_bounds()
-        data = {'message' : buffer.get_text(start, end),
-        'group' : self.group_box.get_active_text()}
-        response = self.gae_conn.app_engine_request(data, "/msg/add")
-        self.wTree.get_widget("send_message").set_sensitive(True)
-        if response == "OK":
-            buffer.set_text("")
-            self.check_messages()
-        else:
-            self.update_status_bar(self.gae_conn.error)
+        col = gtk.TreeViewColumn("User")
+        cell = gtk.CellRendererText()
+        col.pack_start(cell, False)
+        col.set_attributes(cell, text=1)
+        col.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+        col.set_min_width(100)
+        col.set_max_width(250)
+        col.set_resizable(True)
+        col.set_visible(False)
+        col.set_spacing(10)
+        treeview.append_column(col)
+        
+
 
         
     def set_groups(self, refresh=False):
@@ -199,7 +268,7 @@ class PMS(object):
                 return self.user_groups
             except IOError:
                 pass
-        response = self.gae_conn.app_engine_request(None, "/usr/groups/%s" % self.login.username)
+        response = self.gae_conn._app_engine_request(None, "/usr/groups/%s" % self.login.username)
         self.user_groups = self.gae_conn.get_tags("name")
         f = open(self.PROGRAM_DETAILS['home'] + "%s_user_groups" % self.login.username, "w")
         cPickle.dump(self.user_groups, f)

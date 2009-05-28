@@ -4,5 +4,12 @@ runtime: python
 api_version: 1
 
 handlers:
+- url: /usr/defaultavatar
+  static_files: static/avatar-default.png
+  upload: static/avatar-default.png
+  
 - url: /.*
   script: server.py
+
+
+  

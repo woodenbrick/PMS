@@ -131,13 +131,12 @@ class ChangeAvatar(webapp.RequestHandler):
         
 class RetrieveAvatar(webapp.RequestHandler):
     def get(self, useravatar):
-        #user, user_data = server.is_valid_key(self)
-        #if user is False:
-        #    return server.response(self, values={"status" : user_data})
         req = models.UserAvatar.get_by_key_name(useravatar)
         if req is None:
-            return server.response(self, values={"status" : "NOUSER"})
+            #self.response.headers['Content-Type'] = "image/png"
+            self.redirect("/usr/defaultavatar")
+            return
+            #return server.response(self, values={"status" : "NOUSER"})
         self.response.headers['Content-Type'] = "image/png"
         self.response.out.write(req.avatar)
-        #return server.response(self, values={"status" : "OK", "avatar" : req},
-        #                       template='avatar', content='png')
+        

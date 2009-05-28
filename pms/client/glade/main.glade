@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Wed May 27 23:19:57 2009 -->
+<!--Generated with glade3 3.4.5 on Thu May 28 18:36:20 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -244,7 +244,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="has_focus">True</property>
-                <property name="wrap_mode">GTK_WRAP_WORD</property>
+                <property name="wrap_mode">GTK_WRAP_WORD_CHAR</property>
                 <property name="left_margin">2</property>
                 <property name="right_margin">2</property>
                 <signal name="key_press_event" handler="check_key"/>

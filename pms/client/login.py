@@ -59,7 +59,7 @@ class Login(object):
                 self.wTree.get_widget("username_entry").set_text(self.username)
                 self.wTree.get_widget("password_entry").set_text(self.password)
                 self.wTree.get_widget("login_window").show()
-
+    
 
     def on_login_window_destroy(self, widget=None):
         log.info("Quit")

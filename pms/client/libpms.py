@@ -14,7 +14,7 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with pms.  If not, see http://www.gnu.org/licenses/
-
+import gtk
 import os
 import sys
 import urllib, urllib2
@@ -36,19 +36,19 @@ from poster.streaminghttp import register_openers
 
 class ThreadedAppEngineRequest(threading.Thread):
     
-    def __init__(self, gae_conn_obj, data, mapping, auto_now, queue):
+    def __init__(self, gae_conn_obj, data, mapping, auto_now, get_avatar, queue):
         self.gae_conn_obj = gae_conn_obj
         self.data = data
         self.mapping = mapping
         self.auto_now = auto_now
         self.queue = queue
+        self.get_avatar = get_avatar
         threading.Thread.__init__(self)
+        log.info("Started thread for: %s" % self.mapping)
         
     def run(self):
-        print "in thread"
-        response = self.gae_conn_obj.app_engine_request(self.data, self.mapping, self.auto_now)
-        print "thread done"
-        print response
+        response = self.gae_conn_obj._app_engine_request(self.data, self.mapping,
+                                                         self.auto_now, self.get_avatar)
         self.queue.put(response)
 
 
@@ -61,8 +61,12 @@ class AppEngineConnection(object):
         
     def check_xml_response(self, doc):
         """Check if our request was valid"""
+        #debug for non xml testing
+        #log.debug("Response: %s" % doc.read())
         self.xtree = ET.parse(doc)
         self.iter = self.xtree.getiterator()
+        #for i in self.iter:
+        #    print i.tag, i.text
         status = self.iter[0].attrib['status']
         log.info("Request status: %s" % status)
         if status != "OK":
@@ -86,17 +90,24 @@ class AppEngineConnection(object):
     def set_password(self, password):
         self.password = password
     
-    def threaded_app_engine_request(self, data, mapping, auto_now=False):
-        request = ThreadedAppEngineRequest(self, data, mapping, auto_now, self.queue)
+    def app_engine_request(self, data, mapping, auto_now=False, get_avatar=False):
+        """This is threaded to keep the gui responsive"""
+        request = ThreadedAppEngineRequest(self, data, mapping, auto_now,
+                                           get_avatar, self.queue)
         request.daemon = True
         request.start()
+        while request.isAlive():
+            gtk.main_iteration()
         response = self.queue.get()
         return response
     
-    def app_engine_request(self, data, mapping, auto_now=False):
+    def _app_engine_request(self, data, mapping, auto_now=False, get_avatar=False):
         """For get requests, set data to None"""
         if data is None:
             log.info("GET request: %s" % mapping)
+            if get_avatar:
+                req = urllib.urlretrieve(self.url + mapping, get_avatar)
+                return
             try:
                 request = urllib2.urlopen(self.url + mapping)
             except urllib2.URLError, e:
@@ -143,3 +154,4 @@ class AppEngineConnection(object):
         datagen, headers = multipart_encode(data)
         request = urllib2.Request(self.url + "/usr/changeavatar", datagen, headers)
         return self.check_xml_response(urllib2.urlopen(request))
+        
