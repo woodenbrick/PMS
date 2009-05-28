@@ -63,7 +63,7 @@ class PreferencesWindow(object):
         response = self.file_selection.run()
         if response == gtk.RESPONSE_OK:
             #create a thumbnail
-            import Image
+            from PIL import Image
             img = Image.open(self.file_selection.get_filename())
             print img.format, img.size, img.mode
             img.thumbnail((64, 64))
