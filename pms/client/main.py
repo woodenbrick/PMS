@@ -22,7 +22,7 @@ import gtk
 import gtk.glade
 import pygtk
 pygtk.require20()
-import Image
+from PIL import Image
 import libpms
 import db
 import groups
