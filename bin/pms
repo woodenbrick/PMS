@@ -23,6 +23,7 @@ import os
 import sys
 import optparse
 import cPickle
+import shutil
 
 
 launch_dir = os.path.dirname(__file__)
@@ -74,6 +75,8 @@ try:
 except OSError:
     pass
 
+shutil.copy(PROGRAM_DETAILS['images'] + "avatar-default.png",
+                os.path.join(PROGRAM_DETAILS['home'], "thumbnails", "avatar-default.png"))
 
 gobject.threads_init()
 login.Login(PROGRAM_DETAILS)

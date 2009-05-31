@@ -30,8 +30,10 @@ import time
 import login
 import preferences
 import threading
-
 import logger
+import misc
+
+
 log = logger.new_logger("MAIN")
 
 class PMS(object):
@@ -44,7 +46,7 @@ class PMS(object):
         self.login = login_obj
         self.gae_conn = login_obj.gae_conn
         self.preferences = preferences.Preferences(self.PROGRAM_DETAILS, self.login.username)
-
+        self.wTree.get_widget("username_label").set_text("Logged in as " + self.login.username)
         self.main_window = self.wTree.get_widget("window")
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
         
@@ -74,6 +76,7 @@ class PMS(object):
             popup.destroy()
         else:
             self.main_window.show()
+        self.avatars = {}
         self.last_time = self.db.last_date()
         self.fill_messages()
         #set a timer to check messages
@@ -81,8 +84,17 @@ class PMS(object):
         self.check_messages()
         self.check_timer = gobject.timeout_add(5000, self.check_messages)
         self.avatar_timer = gobject.timeout_add(20000, self.retrieve_avatar_from_server)
+        self.nicetime_timer = gobject.timeout_add(10000, self.update_nicetimes)
         self.retrieve_avatar_from_server()
         
+    
+    def update_nicetimes(self):
+        for row in self.messages_liststore:
+            old_info = row[1].split("\n") 
+            old_info[1] = misc.nicetime(row[3])
+            row[1] = "\n".join(old_info)
+            return True
+    
     def update_status_bar(self, message, time=False):
         if time:
             self.wTree.get_widget("last_time").set_text(message)
@@ -100,14 +112,14 @@ class PMS(object):
         self.update_status_bar("Sending message...")
         buffer = self.wTree.get_widget("new_message").get_buffer()
         start, end = buffer.get_bounds()
-        data = {'message' : buffer.get_text(start, end),
+        data = {'message' : buffer.get_text(start, end).strip(),
         'group' : self.group_box.get_active_text()}
         response = self.gae_conn.app_engine_request(data, "/msg/add")
         self.wTree.get_widget("send_message").set_sensitive(True)
         if response == "OK":
             buffer.set_text("")
             self.update_status_bar("Message sent")
-            self.check_messages()
+            #self.check_messages()
         else:
             self.update_status_bar(self.gae_conn.error)
             
@@ -132,20 +144,25 @@ class PMS(object):
         msg_count = 0
         for i in self.gae_conn.iter:
             if i.tag == "date":
-                message[i.tag] = int(i.text)
+                message[i.tag] = float(i.text)
                 self.db.add_new(message)
                 #add to liststore
                 self.messages_liststore.prepend([self.get_avatar(message["user"]),
                                                  "from " + message["user"] + " to " +
                                                  message["group"] + "\n" +
-                                                 "sent at: " + str(message['date']) + "\n"
-                                                 + message["data"] + "\n", message["user"]])
+                                                 misc.nicetime(message['date']) + "\n"
+                                                 + message["data"] + "\n", message["user"],
+                                                 message['date']])
                 msg_count += 1
                 continue
             message[i.tag] = i.text
         if msg_count != 0:
             #we have new messages, lets update the last_time
             self.last_time = self.db.last_date()
+            vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
+            vadj.value = -1
+            while gtk.events_pending():
+                gtk.main_iteration(False)
         self.check_in_progress = False    
         return True
 
@@ -174,54 +191,46 @@ class PMS(object):
     def get_avatar(self, username):
         """Takes a username and returns a pixbuf of their avatar
         or the default if none found"""
-        avatar_path = os.path.join(self.PROGRAM_DETAILS['home'], "thumbnails",
-                                   username + ".thumbnail")
-        if os.path.exists(avatar_path):
-            return gtk.gdk.pixbuf_new_from_file(avatar_path)
-        else:
-            return gtk.gdk.pixbuf_new_from_file(self.PROGRAM_DETAILS['images'] + "avatar-default.png")
-
+        try:
+            av = self.avatars[username].pixbuf
+            return av
+        except KeyError:
+            avatar_path = os.path.join(self.PROGRAM_DETAILS['home'], "thumbnails") + os.sep
+            self.avatars[username] = preferences.Avatar(username, avatar_path)
+            return self.avatars[username].pixbuf
 
     
     def retrieve_avatar_from_server(self):
-        """we will check the server for avatars if our avatar on file is
-        older than 2 hours."""
-        max_diff = 60
         log.info("Checking for new avatars")
         users = self.db.cursor.execute("""SELECT DISTINCT username from messages""").fetchall()
         for user in users:
             log.debug("Checking %s's avatar" % user[0])
-            pic = os.path.join(self.PROGRAM_DETAILS['home'], "thumbnails", user[0]) + ".thumbnail"
-            
-            try:
-                stat_time = os.stat(pic).st_mtime
-                check = True if time.time() - stat_time > max_diff else False
-            except OSError:
-                check = True
-            if check:
+            av = self.avatars[user[0]]
+            if av.requires_update:
                 log.info("Outdated avatar, downloading")
                 response = self.gae_conn.app_engine_request(data=None, mapping="/usr/%s/avatar" % user[0],
-                                                            get_avatar=pic)
+                                                            get_avatar=av.path)
                 self.messages_liststore
             else:
                 log.debug("Avatar current")
             #update the main screen with new thumbs
             for row in self.messages_liststore:
                 if row[2] == user[0]:
-                    row[0] = gtk.gdk.pixbuf_new_from_file(pic)
+                    row[0] = av.pixbuf
         return True
     
 
     def fill_messages(self):
         treeview = self.wTree.get_widget("message_view")
-        self.messages_liststore = gtk.ListStore(gtk.gdk.Pixbuf, str, str)
+        self.messages_liststore = gtk.ListStore(gtk.gdk.Pixbuf, str, str, float)
         treeview.set_model(self.messages_liststore)
         messages = self.db.message_list()
         for message in messages:
             self.messages_liststore.append([self.get_avatar(message[0]), "from " + message[0] + " to " +
                                                  message[1] + "\n" +
-                                                 "sent at: " + str(message[3]) + "\n"
-                                                 + message[2] + "\n", message[0]])
+                                                 misc.nicetime(message[3]) + "\n"
+                                                 + message[2] + "\n", message[0],
+                                                 message[3]])
         col = gtk.TreeViewColumn("Pic")
         cell = gtk.CellRendererPixbuf()
         col.pack_start(cell, False)

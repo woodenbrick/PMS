@@ -139,9 +139,12 @@ class MessageDB(DB):
         log.info("Retrieving date of last message")
         self.cursor.execute("SELECT date FROM messages ORDER by date DESC LIMIT 1")
         t = self.cursor.fetchone()
+        
         if t is None:
             log.info("No messages, using default date of 2 weeks ago")
             #if the user doesnt have any messages locally
             #we will allow messages from the last 2 weeks
             t = [time.time() - 1209600]
+        else:
+            log.debug("Last message sent at: %s" % t[0])
         return t[0]

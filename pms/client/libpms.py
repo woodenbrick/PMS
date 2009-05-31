@@ -44,7 +44,7 @@ class ThreadedAppEngineRequest(threading.Thread):
         self.queue = queue
         self.get_avatar = get_avatar
         threading.Thread.__init__(self)
-        log.info("Started thread for: %s" % self.mapping)
+
         
     def run(self):
         response = self.gae_conn_obj._app_engine_request(self.data, self.mapping,
@@ -61,12 +61,8 @@ class AppEngineConnection(object):
         
     def check_xml_response(self, doc):
         """Check if our request was valid"""
-        #debug for non xml testing
-        #log.debug("Response: %s" % doc.read())
         self.xtree = ET.parse(doc)
         self.iter = self.xtree.getiterator()
-        #for i in self.iter:
-        #    print i.tag, i.text
         status = self.iter[0].attrib['status']
         log.info("Request status: %s" % status)
         if status != "OK":

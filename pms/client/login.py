@@ -61,16 +61,20 @@ class Login(object):
                 self.wTree.get_widget("login_window").show()
     
 
-    def on_login_window_destroy(self, widget=None):
-        log.info("Quit")
-        gtk.main_quit()
+    def on_login_window_destroy(self, widget=None, quit=True):
+        if quit:
+            log.info("Quit")
+            gtk.main_quit()
+        else:
+            self.wTree.get_widget("login_window").hide()
 
     def show_main(self):
         self.gae_conn.default_values = { "name" : self.username,
                                          "session_key" : self.session_key}
         self.gae_conn.set_password(self.password)
+        self.on_login_window_destroy(quit=False)
         main.PMS(self)
-        self.wTree.get_widget("login_window").hide()
+        
         
        
     def on_entry_key_press_event(self, widget, key):
@@ -133,18 +137,20 @@ class Login(object):
         log.info("Requesting session key")
         response = self.gae_conn.app_engine_request(data, "/getsessionkey", auto_now=True)
         if response == "OK":
+            self.wTree.get_widget("login_error").set_text("Requesting session key...OK")
             self.session_key = self.gae_conn.get_tag("key")
             self.expires = int(self.gae_conn.get_tag("expires"))
             self.dump_session_key()
             self.db.update_login_time(self.username)
+            if self.wTree.get_widget("remember_password").get_active():
+                self.db.add_user(self.username, self.password)
+                self.db.auto_login_user(self.username, self.wTree.get_widget("auto_login").get_active())
             self.show_main()
         else:
             self.wTree.get_widget("login_error").set_text(self.gae_conn.error)
             self.wTree.get_widget("login").set_sensitive(True)
             
-        if self.wTree.get_widget("remember_password").get_active():
-            self.db.add_user(self.username, self.password)
-            self.db.auto_login_user(self.username, self.wTree.get_widget("auto_login").get_active())
+
 
         
     def on_login_clicked(self, widget):

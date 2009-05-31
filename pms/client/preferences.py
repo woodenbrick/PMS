@@ -16,11 +16,13 @@
 #along with pms.  If not, see http://www.gnu.org/licenses/
 
 import os
+import shutil
 import cPickle
 import gtk
 import pygtk
 import gtk.glade
 import urllib
+import time
 
 class PreferencesWindow(object):
     
@@ -119,4 +121,23 @@ class Preferences(object):
         f.close()
      
 
-            
+class Avatar(object):
+    
+    max_diff = 60 #time to check for new avatar, in seconds
+    
+    def __init__(self, username, dir, default=False):
+        self.username = username
+        self.path = dir + username + ".thumbnail"
+        try:
+            self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
+        except:
+            shutil.copy(dir + "avatar-default.png", self.path)
+            self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
+        self.stat_time = os.stat(dir).st_mtime
+        
+    
+    def requires_update(self):
+        """Returns True if the avatar is old and we should download a new one"""
+        if time.time() - self.stat_time > max_diff:
+            return True
+        return False

@@ -50,10 +50,10 @@ class New(webapp.RequestHandler):
             #cache member and group
             memcache.set("member-" + user.name + group.name, member)
             memcache.set("group-" + group.name, group)
-            mess = models.Message(user=user, group=group, comment=message, date=int(time.time()))
+            mess = models.Message(user=user, group=group, comment=message, date=time.time())
             mess.put()
             #cache this date for other users
-            memcache.set("message-" + user.name, mess.date)
+            memcache.set("last_message-" + group.name, mess.date)
             server.response(self)
         else:
             server.response(self, {"status" : "BADAUTH"})
@@ -68,17 +68,18 @@ class Check(webapp.RequestHandler):
         user, user_data = server.is_valid_key(self)
         if not user:
             return server.response(self, {"status" : "BADAUTH"})
-        last_time = int(float(self.request.get("time")))
-        lmsg = memcache.get("message-" + user.name)
-        if lmsg is not None and lmsg <= last_time:
-            #no new messages
-            return server.response(self)
-        #otherwise, lets memcache with the last_time given
-        memcache.set("message-" + user.name, last_time)
+        last_time = float(self.request.get("time"))
         membership = models.GroupMember.all().filter("user =", user)
         all_messages = []
         for member in membership:
-            messages = models.Message.all().filter("group =", member.group).filter("date >", last_time).fetch(100)
+            #last_message = memcache.get("last_message-" + member.group.name)
+            #if last_message <= last_time and last_message is not None:
+            #    continue
+            messages = models.Message.all().filter("group =", member.group).filter("date >", last_time + 0.0000001).fetch(100)
+            if len(messages) > 0:
+                pass
+                #FIXME this causes messages to be sent many times, work out a proper solution
+                #memcache.set("last_message-" + member.group.name, messages[-1].date)
             all_messages.extend(messages)  
         server.response(self, values={"status" : "OK", "messages" : all_messages}, template="messages")
 
