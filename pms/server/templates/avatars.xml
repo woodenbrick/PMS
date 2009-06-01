@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pms status="{{ status }}">{% for avatar in avatars %} 
+<user>
+    <user>{{avatar.user.name}}</user>
+    <uploaded>{{avatar.upload_time}}</uploaded>
+</user>{% endfor %}</pms>
