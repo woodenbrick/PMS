@@ -32,6 +32,7 @@ class GroupWindow():
         self.parent = parent
         self.wTree = gtk.glade.XML(self.parent.PROGRAM_DETAILS['glade'] + "group.glade")
         self.wTree.signal_autoconnect(self)
+        self.wTree.get_widget("group_error").set_text("Loading groups")
         self.grouplist_file = self.parent.PROGRAM_DETAILS['home'] + "grouplist_" + self.parent.login.username
         self.columns = ["name", "owner", "description", "password", "membership", "passimg", "memimage"]
         
@@ -74,11 +75,11 @@ class GroupWindow():
         cPickle.dump(self.group_list, f)
         self.mtime = time.time()
 
-   
-    
+
     def new_grouplist(self, widget=None):
         """Returns all the groups from the server and puts them into a treeview
         we need: a list of all groups a list of the groups the user is already a member of"""
+        self.wTree.get_widget("group_error").set_text("Downloading new group list...")
         response = self.parent.gae_conn.app_engine_request(None, "/group/list")
         if response != "OK":
             self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
@@ -89,6 +90,7 @@ class GroupWindow():
         if response != "OK":
             self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
             return
+        self.wTree.get_widget("group_error").set_text("Downloading new group list...Done")
         user_groups_tree = self.parent.gae_conn.xtree
         user_groups = []
         for i in user_groups_tree.getiterator():
@@ -227,7 +229,7 @@ class GroupWindow():
             #password required?
             model, iter = self.wTree.get_widget("groupview").get_selection().get_selected()
             pass_req = model.get_value(iter, 3)
-            if pass_req == "True":
+            if pass_req is True:
                 #password popup
                 self.wTree.get_widget("group_pass_label").set_text(
                     "The group %s requires a password:" % group)

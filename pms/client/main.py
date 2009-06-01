@@ -74,8 +74,10 @@ class PMS(object):
                                   "You are not a member of any group.  See group list?")
             response = popup.run()
             if response == gtk.RESPONSE_YES:
+                popup.destroy()
                 self.show_groups(None)
-            popup.destroy()
+            else:
+                popup.destroy()
         else:
             self.main_window.show()
         self.avatars = {}
