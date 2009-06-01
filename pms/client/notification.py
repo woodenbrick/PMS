@@ -7,7 +7,7 @@ except ImportError:
     pass
 import time
 import gtk
-
+import sys
 
 
 class NotificationSystem(object):
