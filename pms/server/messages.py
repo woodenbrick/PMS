@@ -25,6 +25,7 @@ import random
 import string
 import server
 
+import logging
 class New(webapp.RequestHandler):
     def post(self):
         """
@@ -69,17 +70,23 @@ class Check(webapp.RequestHandler):
         if not user:
             return server.response(self, {"status" : "BADAUTH"})
         last_time = float(self.request.get("time"))
-        membership = models.GroupMember.all().filter("user =", user)
+        logging.info("Last time: %s" % last_time)
+        membership = memcache.get("user-groups" + user.name)
+        if membership is None:
+            membership = models.GroupMember.all().filter("user =", user)
+            memcache.set("user-groups" + user.name, membership)
         all_messages = []
         for member in membership:
-            #last_message = memcache.get("last_message-" + member.group.name)
-            #if last_message <= last_time and last_message is not None:
-            #    continue
-            messages = models.Message.all().filter("group =", member.group).filter("date >", last_time + 0.0000001).fetch(100)
+            last_message = memcache.get("last_message-" + member.group.name)
+            if last_message is not None:
+                if last_message < last_time + 1 or last_message == "Unused":
+                    continue
+            logging.info("Using datastore for %s" % member.group.name)
+            messages = models.Message.all().filter("group =", member.group).filter("date >", last_time + 0.1).fetch(100)
             if len(messages) > 0:
-                pass
-                #FIXME this causes messages to be sent many times, work out a proper solution
-                #memcache.set("last_message-" + member.group.name, messages[-1].date)
-            all_messages.extend(messages)  
+                memcache.set("last_message-" + member.group.name, float(messages[-1].date))
+            else:
+                memcache.set("last_message-" + member.group.name, "Unused")
+            all_messages.extend(messages)
         server.response(self, values={"status" : "OK", "messages" : all_messages}, template="messages")
 

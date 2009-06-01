@@ -52,6 +52,11 @@ class UserDB(DB):
                 `password` varchar(200) NOT NULL,
                 `last_login` int(20),
                 `auto_login` boolean default 0
+            )""",
+            
+            """CREATE TABLE IF NOT EXISTS `avatars` (
+                `username` varchar(50),
+                `avatar_time` int(20)
             )"""
         ]
         self.create_tables(tables)
@@ -98,7 +103,25 @@ class UserDB(DB):
             self.cursor.execute("""SELECT * FROM users WHERE username=?""", (username,))
         return self.cursor.fetchone()
         
-
+    def update_avatar(self, username, upload_time):
+        """At the moment we are storing the avatars seperatly in the future
+        they will be stored here"""
+        u = self.cursor.execute("""select * from avatars WHERE username=?""", (username,)).fetchone()
+        if u is None:
+            self.cursor.execute("""insert into avatars (username, avatar_time) VALUES
+                                 (?, ?)""", (username, upload_time))
+        else:
+            self.cursor.execute("""update avatars set avatar_time=? WHERE username=?""",
+                            (upload_time, username))
+        self.db.commit()
+        
+    def get_avatar_time(self):
+        """Returns the time of the last avatar downloaded"""
+        self.cursor.execute("""SELECT avatar_time FROM avatars ORDER BY avatar_time LIMIT 1""")
+        last_time = self.cursor.fetchone()
+        if last_time is None:
+            return "all"
+        return last_time[0]
 
 class MessageDB(DB):
     
@@ -110,7 +133,7 @@ class MessageDB(DB):
                 `_group` varchar(50) NOT NULL,
                 `message` blob,
                 `date` integer(12)
-            )"""
+            )""",
             ]
         self.create_tables(tables)
 

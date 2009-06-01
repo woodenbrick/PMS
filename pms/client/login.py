@@ -37,7 +37,7 @@ class Login(object):
         self.PROGRAM_DETAILS = PROGRAM_DETAILS
         self.wTree = gtk.glade.XML(self.PROGRAM_DETAILS['glade'] + "login.glade")
         self.wTree.signal_autoconnect(self)
-        self.gae_conn = libpms.AppEngineConnection(self.PROGRAM_DETAILS['server'])
+        self.gae_conn = libpms.AppEngineConnection(self.PROGRAM_DETAILS)
         self.db = db.UserDB(self.PROGRAM_DETAILS['home'] + "usersDB")
         user_details = self.db.return_user_details()
         self.login_auto_completer()
@@ -51,8 +51,9 @@ class Login(object):
             #their details, though we should still keep their sessionkey
             self.username = user_details[0]
             self.password = user_details[1]
-            self.session_key, self.expires = self.check_for_session_key()
-            if self.session_key and user_details[3] != 0:
+            self.gae_conn.default_values['name'] = self.username
+            has_key = self.gae_conn.check_for_session_key(self.username)
+            if has_key and user_details[3] != 0:
                 #we should check if the server is available here
                 self.show_main()
             else:
@@ -68,9 +69,7 @@ class Login(object):
         else:
             self.wTree.get_widget("login_window").hide()
 
-    def show_main(self):
-        self.gae_conn.default_values = { "name" : self.username,
-                                         "session_key" : self.session_key}
+    def show_main(self, dump=False):
         self.gae_conn.set_password(self.password)
         self.on_login_window_destroy(quit=False)
         main.PMS(self)
@@ -106,29 +105,7 @@ class Login(object):
         for user in users:
             liststore.append([user[0]])
     
-    
-    
-    def check_for_session_key(self):
-        """check if user has a sessionkey and return sessionkey, expires
-        or False, False if the key doesnt exist or is outdated"""
-        try:
-            f = open(self.PROGRAM_DETAILS['home'] + "sessionkey_" + self.username, "r")
-        except IOError:
-            log.info("No session key available")
-            return False, False
-        key, exp = cPickle.load(f)
-        f.close()
-        if exp <= time.time():
-            log.info("Outdated session key")
-            return False, False
-        log.info("Session key available, expires in %s minutes" % ((exp - time.time()) / 60))
-        return key, exp
-    
-    def dump_session_key(self):
-        f = open(self.PROGRAM_DETAILS['home'] + "sessionkey_" + self.username, "w")
-        log.info("Saving session key")
-        cPickle.dump([self.session_key, self.expires], f)
-        f.close()
+
 
     def request_session_key(self):
         #only request a new key if the old one is outdated
@@ -138,13 +115,13 @@ class Login(object):
         response = self.gae_conn.app_engine_request(data, "/getsessionkey", auto_now=True)
         if response == "OK":
             self.wTree.get_widget("login_error").set_text("Requesting session key...OK")
-            self.session_key = self.gae_conn.get_tag("key")
-            self.expires = int(self.gae_conn.get_tag("expires"))
-            self.dump_session_key()
+            self.gae_conn.default_values['session_key'] = self.gae_conn.get_tag("key")
+            self.gae_conn.expires = int(self.gae_conn.get_tag("expires"))
             self.db.update_login_time(self.username)
             if self.wTree.get_widget("remember_password").get_active():
                 self.db.add_user(self.username, self.password)
                 self.db.auto_login_user(self.username, self.wTree.get_widget("auto_login").get_active())
+            self.gae_conn.dump_session_key()
             self.show_main()
         else:
             self.wTree.get_widget("login_error").set_text(self.gae_conn.error)
@@ -165,8 +142,9 @@ class Login(object):
             self.db.add_user(self.username, self.password)
         else:
             self.db.remove_user(self.username)
-        self.session_key, self.expires = self.check_for_session_key()
-        if self.session_key:
+        has_key = self.gae_conn.check_for_session_key(self.username)
+        self.gae_conn.default_values['name'] = self.username
+        if has_key:
             self.show_main()
         else:
             self.request_session_key()
@@ -179,10 +157,20 @@ class Login(object):
         self.wTree.get_widget("register_window").show()
         
     def on_create_account_clicked(self, widget):
+        username = self.wTree.get_widget("reg_username").get_text()
+        if not self.sanity_check("username", username):
+            return 
+        password = self.wTree.get_widget("reg_password").get_text()
+        if not self.sanity_check("password", password,
+                                 self.wTree.get_widget("reg_password_check").get_text()):
+            return
+        email = self.wTree.get_widget("email").get_text()
+        if not self.sanity_check("email", email):
+            return
         data = {
-            "name" : self.wTree.get_widget("reg_username").get_text(),
-            "password" : hashlib.sha1(self.wTree.get_widget("reg_password").get_text()).hexdigest(),
-            "email" : self.wTree.get_widget("email").get_text()
+            "name" : username,
+            "password" : hashlib.sha1(password).hexdigest(),
+            "email" : email
         }
         response = self.gae_conn.app_engine_request(data, "/usr/add")
         if response == "OK":
@@ -190,8 +178,34 @@ class Login(object):
             self.wTree.get_widget("register_window").hide()
             self.wTree.get_widget("login_error").set_text("Registration successful")
         else:
-            self.wTree.get_widget("register_error").set_text(response)
-            
+            self.wTree.get_widget("register_error").set_text(self.gae_conn.error)
+    
+    def sanity_check(self, type, value, pass_check=None):
+        """types are email, username, password.  use pass_check to compare passwords with value"""
+        if type == "username":
+            reg = "^\w{5,18}$"
+            error = "User name must be alpha-numeric and between 5 and 18 characters"
+        elif type == "email":
+            reg = "^(?:[a-zA-Z0-9_'^&amp;/+-])+(?:\.(?:[a-zA-Z0-9_'^&amp;/+-])+)*@(?:(?:\[?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))\.){3}(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\]?)|(?:[a-zA-Z0-9-]+\.)+(?:[a-zA-Z]){2,}\.?)$"
+            error = "Invalid email address"
+        else:
+            reg = pass_check
+            error = "Passwords don't match"
+        if re.search(reg, value):
+            self.wTree.get_widget("register_error").set_text("")
+            return True
+        self.wTree.get_widget("register_error").set_text(error)
+        return False
+
+    def reg_focus_out(self, widget, *args):
+        if widget.name == "reg_username":
+            self.sanity_check("username", widget.get_text())
+        if widget.name == "reg_password_check":
+            self.sanity_check("password", self.wTree.get_widget("reg_password").get_text(),
+                              self.wTree.get_widget("reg_password_check").get_text())
+        if widget.name == "email":
+            self.sanity_check("email", widget.get_text())
+    
     def on_forgot_pass_clicked(self, widget):
         self.wTree.get_widget("pass_change").show()
         

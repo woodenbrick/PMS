@@ -18,7 +18,7 @@
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
-
+from google.appengine.api import memcache
 import models
 import hashlib
 import time
@@ -31,7 +31,7 @@ class Add(webapp.RequestHandler):
     def post(self):
         user, user_data = server.is_valid_key(self)
         if not user:
-            return server.response(self, user_data)
+            return server.response(self, {"values" : "BADAUTH"})
         password_required = True if self.request.get("password") != "" else False
         group = self.request.get("group")
         if group == "":
@@ -51,6 +51,7 @@ class Add(webapp.RequestHandler):
                                  password_required=password_required,
                                  password=password, salt=salt)
         new_group.put()
+        memcache.delete("user-groups" + user.name)
         member = models.GroupMember(group=new_group, user=user)
         member.put()
         server.response(self)
@@ -59,7 +60,7 @@ class Join(webapp.RequestHandler):
     def post(self):
         user, userdata = server.is_valid_key(self)
         if not user:
-            return server.response(self, userdata)
+            return server.response(self, {"status": userdata})
         if self.request.get("group") == "":
             return server.response(self, {"status" : "MISSINGVALUES"})
         group = models.Group.get_by_key_name(self.request.get("group"))
@@ -71,6 +72,7 @@ class Join(webapp.RequestHandler):
                 return server.response(self, {"status" : "BADPASS"})
         member = models.GroupMember(group=group, user=user)
         member.put()
+        memcache.delete("user-groups" + user.name)
         return server.response(self)
 
 class Leave(webapp.RequestHandler):
@@ -86,6 +88,7 @@ class Leave(webapp.RequestHandler):
         if user.name == group.owner.name:
             return server.response(self, {"status" : "ISOWNER"})
         member.delete()
+        memcache.delete("user-groups" + user.name)
         server.response(self)
         
 class Delete(webapp.RequestHandler):
@@ -99,6 +102,7 @@ class Delete(webapp.RequestHandler):
         member = models.GroupMember.all().filter("group =", group).get()
         member.delete()
         group.delete()
+        memcache.delete("user-groups" + user.name)
         server.response(self)
 
 

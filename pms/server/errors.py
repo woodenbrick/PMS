@@ -28,6 +28,8 @@ errors = {
     "ISOWNER" : "Owner cannot leave a group they created",
     "NOTOWNER" : "Your request requires group ownership privledges",
     "OUTDATED" : "The link you have followed is outdated",
+    "BADUSERNAME" : "User name must be alpha-numeric and between 5 and 18 characters",
+    "BADEMAIL" : "Invalid email address",
     "ERROR" : "", #general error, has its own message
 }
     

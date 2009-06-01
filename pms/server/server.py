@@ -25,21 +25,33 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
 from google.appengine.ext.webapp.template import render
-
+from google.appengine.api import memcache
 import models
 import groups
 import users
 import admin
 import messages
 import errors
+import logging
 
 def is_valid_key(handler_obj):
     """Checks if the session key is valid, Returns the user model if True"""
     user_data = { "name" : handler_obj.request.get("name"),
             "session_key" : handler_obj.request.get("session_key"),
             "ip" : handler_obj.request.remote_addr}
-    user = models.User.get_by_key_name(user_data['name'])
-    sess = models.Session.all().filter("user =", user).get()
+    user = memcache.get("user-" + user_data['name'])
+    if user is None:
+        user = models.User.get_by_key_name(user_data['name'])
+        memcache.set("user-" + user_data['name'], user)
+    if user is None:
+        return False, "NOUSER"       
+    sess = memcache.get("session-" + user_data['name'])
+    if sess is None:
+        sess = models.Session.all().filter("user =", user).get()
+        memcache.set("session-" + user_data['name'], sess)
+    if sess is None:
+        return False, "BADAUTH"
+    logging.debug("Session:" + "\n" + sess.session_key  + "\n" + user_data['session_key'])
     try:
         if sess.session_key == user_data['session_key'] and sess.ip == user_data['ip'] and sess.expires > time.time():
             return user, user_data
@@ -77,8 +89,9 @@ class GetSessionKey(webapp.RequestHandler):
 
         if time.time() - float(send_time) > 5000:
             return response(self, {"status" : "BADTIME"})
-    
-        user = models.User.get_by_key_name(name)
+        user = memcache.get("user-" + name)
+        if user is None:
+            user = models.User.get_by_key_name(name)
         if user is None:
             return response(self, {"status" : "NOUSER"})
         hash_check = hashlib.sha1(hash + user.salt).hexdigest()
@@ -93,16 +106,16 @@ class GetSessionKey(webapp.RequestHandler):
         expires = int(time.time() + 1000)
         session_key = "".join(session_key)
         try:
-            sess = models.Session.get_by_key_name(user.name)
+            sess = models.Session.get_by_key_name(name)
             sess.user = user
             sess.session_key = session_key
             sess.expires = expires
             sess.ip = self.request.remote_addr
-            sess.put()
         except AttributeError:
-            s = models.Session(key_name=user.name, user=user, session_key=session_key,
+            sess = models.Session(key_name=name, user=user, session_key=session_key,
                                expires=expires, ip=self.request.remote_addr)
-            s.put()
+        sess.put()
+        memcache.set("session-" + name, sess)
         temp_values = {"status" : "OK",
                         "session_key" : session_key,
                         "expires" : expires}
@@ -121,6 +134,7 @@ application = webapp.WSGIApplication([
     (r'/usr/groups/(.+)', users.Groups),
     (r'/usr/(.+)/avatar', users.RetrieveAvatar),
     ('/usr/changeavatar', users.ChangeAvatar),
+    ('/usr/avatarlist', users.AvatarList),
     ('/usr/changepass', users.ResetPasswordPart1),
     (r'/usr/(.+)/changepass/(.+)', users.ResetPasswordPart2),
     

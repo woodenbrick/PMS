@@ -53,9 +53,10 @@ class ThreadedAppEngineRequest(threading.Thread):
 
 
 class AppEngineConnection(object):
-    def __init__(self, server):
-        self.url = server
+    def __init__(self, program_details):
+        self.url = program_details['server']
         self.default_values = {}
+        self.home_dir = program_details['home']
         self.error = ""
         self.queue = Queue.Queue()
         
@@ -102,8 +103,13 @@ class AppEngineConnection(object):
         if data is None:
             log.info("GET request: %s" % mapping)
             if get_avatar:
-                req = urllib.urlretrieve(self.url + mapping, get_avatar)
-                return
+                log.info("%s %s %s" % (self.url, mapping, get_avatar))
+                try:
+                    req = urllib.urlretrieve(self.url + mapping, get_avatar)
+                    return True
+                except:
+                    return False
+                
             try:
                 request = urllib2.urlopen(self.url + mapping)
             except urllib2.URLError, e:
@@ -113,7 +119,14 @@ class AppEngineConnection(object):
             return self.check_xml_response(request)
         if auto_now:
             data['time'] = time.time()
-        data.update(self.default_values)
+        try:
+            data['name']
+        except KeyError:
+            data['name'] = self.default_values['name']
+        try:
+            data['session_key'] = self.default_values['session_key']
+        except KeyError:
+            pass
         encoded_values = urllib.urlencode(data)
         log.info("POST request: %s" % mapping)
         log.debug("POST DATA %s" % data)
@@ -134,13 +147,34 @@ class AppEngineConnection(object):
             if new_response == "OK":
                 log.info("Redoing defered call")
                 self.default_values["session_key"] = self.get_tag("key")
-                #expires = int(self.gae_conn.get_tag("expires"))
-                #we should dump the file as well, but current we cant
-                #should move login function dump here
-                #now we redo the old request
+                self.expires = int(self.get_tag("expires"))
+                self.dump_session_key()
                 response = self.app_engine_request(data, mapping)
         return response
+    
+    def dump_session_key(self):
+        f = open(self.home_dir + "sessionkey_" + self.default_values['name'], "w")
+        log.info("Saving session key")
+        cPickle.dump([self.default_values['session_key'], self.expires], f)
+        f.close()
         
+        
+    def check_for_session_key(self, username):
+        """check if user has a sessionkey and return sessionkey
+        or False if the key doesnt exist or is outdated"""
+        try:
+            f = open(self.home_dir + "sessionkey_" + username, "r")
+        except IOError:
+            log.info("No session key available")
+            return False
+        self.default_values['session_key'], self.expires = cPickle.load(f)
+        f.close()
+        if self.expires <= time.time():
+            log.info("Outdated session key")
+            return False
+        log.info("Session key available, expires in %s minutes" % ((self.expires - time.time()) / 60))
+        return self.default_values['session_key']
+
     def send_avatar(self, filename):
         """A special function for this, since it requires images to be sent which
         cannot be done in an easy way"""

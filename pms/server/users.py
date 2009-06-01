@@ -18,12 +18,15 @@
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.api import mail
+from google.appengine.api import memcache
 import models
 import hashlib
 import time
 import random
 import string
 import server
+import logging
+import re
 
 class Add(webapp.RequestHandler):
     def post(self):
@@ -31,14 +34,18 @@ class Add(webapp.RequestHandler):
         salt = server.generate_salt()
         password = hashlib.sha1(self.request.get("password") + salt).hexdigest()
         email = self.request.get("email")
-        timezone = self.request.get("timezone")
         #check if this user exists already
         check_user = models.User.get_by_key_name(name)
         if check_user is not None:
             return server.response(self, values={"status" : "USEREXISTS"})
+        if re.search("^\w{5,18}$", name) is None:
+            return server.response(self, values={"status" : "BADUSERNAME"})   
+        if re.search("^(?:[a-zA-Z0-9_'^&amp;/+-])+(?:\.(?:[a-zA-Z0-9_'^&amp;/+-])+)*@(?:(?:\[?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))\.){3}(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\]?)|(?:[a-zA-Z0-9-]+\.)+(?:[a-zA-Z]){2,}\.?)$", email) is None:
+            return server.response(self, values={"status" : "BADEMAIL"})
+
         try:
             new_user = models.User(key_name=name, name=name, password=password,
-                                   email=email, timezone=timezone, salt=salt)
+                                   email=email, salt=salt)
             new_user.put()
             server.response(self)
         except db.BadValueError, e:
@@ -127,6 +134,7 @@ class ChangeAvatar(webapp.RequestHandler):
         users_avatar.user = user
         users_avatar.upload_time = time.time()
         users_avatar.put()
+        memcache.set("useravatar-" + user.name, users_avatar)
         return server.response(self)
         
 class RetrieveAvatar(webapp.RequestHandler):
@@ -140,3 +148,35 @@ class RetrieveAvatar(webapp.RequestHandler):
         self.response.headers['Content-Type'] = "image/png"
         self.response.out.write(req.avatar)
         
+class AvatarList(webapp.RequestHandler):
+    """gets a list of avatars that this user would want to have"""
+    def post(self):
+        user, user_details = server.is_valid_key(self)
+        last_time = self.request.get("time")
+        if not user:
+            return server.response(self, values={"status" : "BADAUTH"})
+        userlist = self.request.get("userlist").split(",")
+        logging.info(str(userlist))
+        new_avatars = []
+        logging.info("name list %s" % str(userlist))
+        for name in userlist:
+            avatar = memcache.get("useravatar-" + name)
+            if avatar is None:
+                avatar = models.UserAvatar.get_by_key_name(name)
+                memcache.set("useravatar-" + name, avatar)
+            if avatar is None:
+                logging.info("There is no avatar for '%s' continue" % name)
+                continue
+            if last_time != "all":
+                logging.info(avatar.upload_time - float(last_time))
+            if last_time == "all":
+                new_avatars.append(avatar)
+                logging.info("Appended avatar")
+            elif avatar.upload_time > float(last_time):
+                new_avatars.append(avatar)
+                logging.info("Appended avatar")
+            else:
+                logging.info("avatar not appened: %s" % name)
+                logging.info("upload time: %s last time: %s" % (avatar.upload_time, last_time))
+        return server.response(self, values={"status" : "OK", "avatars" : new_avatars},
+                               template="avatars")

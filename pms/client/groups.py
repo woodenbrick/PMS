@@ -214,9 +214,11 @@ class GroupWindow():
         values = {"group" : group}
         if member:
             #leave group
+            self.wTree.get_widget("group_error").set_text("Leaving group %s..." % values['group'])
             response = self.parent.gae_conn.app_engine_request(values, "/group/leave")
             if response == "OK":
                 self.change_membership()
+                self.wTree.get_widget("group_error").set_text("Left the group %s" % values['group'])
             else:
                 self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
                 
@@ -230,19 +232,19 @@ class GroupWindow():
                 self.wTree.get_widget("group_pass_label").set_text(
                     "The group %s requires a password:" % group)
                 response = self.wTree.get_widget("password").run()
+                self.wTree.get_widget("password").hide()
                 if response == gtk.RESPONSE_CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
-                    self.wTree.get_widget("password").hide()
                     return
                 else:
                     values["password"] = hashlib.sha1(self.wTree.get_widget("join_group_pass").get_text()).hexdigest()
-            
+            self.wTree.get_widget("group_error").set_text("Joining group %s..." % values['group'])
             response = self.parent.gae_conn.app_engine_request(values, "/group/join")
             if response == "OK":
                 self.change_membership()
-                pass
+                self.wTree.get_widget("group_error").set_text("Joined the group %s" % values['group'])
             else:
                 self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
-            self.wTree.get_widget("password").hide()
+            
             
     
     

@@ -48,7 +48,7 @@ class PreferencesWindow(object):
                                                              gtk.RESPONSE_CANCEL,
                                                              gtk.STOCK_OK, gtk.RESPONSE_OK),
                                                     backend=None)
-        self.file_selection.set_current_folder(self.program_details['home'])
+        self.file_selection.set_current_folder(os.path.split(self.program_details['home'])[0])
         filter = gtk.FileFilter()
         filter.set_name("Images (jpg, gif, png, bmp)")
         filter.add_pattern("*.png")
@@ -82,13 +82,15 @@ class PreferencesWindow(object):
         self.preferences['popup'] = self.wTree.get_widget("popup").get_active()
         #check if avatar has changed
         if self.new_avatar:
-            os.remove(self.preferences['avatar'])
+            #os.remove(self.preferences['avatar'])
             os.rename(os.path.join(self.program_details['home'], "thumbnails",
                       "_temp.thumbnail"), self.preferences['avatar'])
             response = self.parent.gae_conn.send_avatar(self.preferences['avatar'])
             if response != "OK":
                 self.wTree.get_widget("preference_error").set_text(self.parent.gae_conn.error)
                 return
+            else:
+                self.parent.retrieve_avatar_from_server()
         self.parent.preferences.save_options()
         self.wTree.get_widget("window").destroy()
 
@@ -123,8 +125,6 @@ class Preferences(object):
 
 class Avatar(object):
     
-    max_diff = 60 #time to check for new avatar, in seconds
-    
     def __init__(self, username, dir, default=False):
         self.username = username
         self.path = dir + username + ".thumbnail"
@@ -136,8 +136,6 @@ class Avatar(object):
         self.stat_time = os.stat(dir).st_mtime
         
     
-    def requires_update(self):
-        """Returns True if the avatar is old and we should download a new one"""
-        if time.time() - self.stat_time > max_diff:
-            return True
-        return False
+    def update(self):
+        """Updates the pixbuf with the saved thumbnail"""
+        self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)

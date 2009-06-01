@@ -32,6 +32,7 @@ import preferences
 import threading
 import logger
 import misc
+import notification
 
 
 log = logger.new_logger("MAIN")
@@ -54,6 +55,7 @@ class PMS(object):
         self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-blue.png")
         self.tray_icon.connect("activate", self.activate_menu, None)
         self.tray_icon.connect("popup-menu", self.popup_menu, None)
+        self.notifier = notification.NotificationSystem(self)
         
         #show icons
         images = ["refresh", "bug", "groups"]
@@ -83,9 +85,8 @@ class PMS(object):
         self.check_in_progress = False
         self.check_messages()
         self.check_timer = gobject.timeout_add(5000, self.check_messages)
-        self.avatar_timer = gobject.timeout_add(20000, self.retrieve_avatar_from_server)
-        self.nicetime_timer = gobject.timeout_add(10000, self.update_nicetimes)
-        self.retrieve_avatar_from_server()
+        self.avatar_timer = gobject.timeout_add(1800000, self.retrieve_avatar_from_server)
+        self.nicetime_timer = gobject.timeout_add(60000, self.update_nicetimes)
         
     
     def update_nicetimes(self):
@@ -142,27 +143,33 @@ class PMS(object):
             return True
         message = {}
         msg_count = 0
+        make_adj = True if self.wTree.get_widget("scrolledwindow").get_vadjustment().value == 0 else False
         for i in self.gae_conn.iter:
             if i.tag == "date":
                 message[i.tag] = float(i.text)
                 self.db.add_new(message)
                 #add to liststore
+                nicetime = misc.nicetime(message['date'])
+                msg = "from %s to %s\n%s\n%s" % (message['user'], message['group'],
+                                                 nicetime, message['data'])
                 self.messages_liststore.prepend([self.get_avatar(message["user"]),
-                                                 "from " + message["user"] + " to " +
-                                                 message["group"] + "\n" +
-                                                 misc.nicetime(message['date']) + "\n"
-                                                 + message["data"] + "\n", message["user"],
-                                                 message['date']])
-                msg_count += 1
+                                                 msg, message['user'], message['date']])
+                if message['user'] != self.login.username:
+                    msg_count += 1
                 continue
             message[i.tag] = i.text
         if msg_count != 0:
+            if not self.main_window.is_active():
+                self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-red.png")
+            self.notifier.new_message(message, msg_count, nicetime,
+                                      self.get_avatar(message['user']))
             #we have new messages, lets update the last_time
             self.last_time = self.db.last_date()
-            vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
+        vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
+        if make_adj:
             vadj.value = -1
-            while gtk.events_pending():
-                gtk.main_iteration(False)
+        while gtk.events_pending():
+            gtk.main_iteration(False)
         self.check_in_progress = False    
         return True
 
@@ -176,12 +183,19 @@ class PMS(object):
         login.Login(self.PROGRAM_DETAILS, new_user=True)
     
     def activate_menu(self, *args):
+        log.debug("Activating menu")
         if self.main_window.props.visible:
             self.main_window.hide()
         else:
             self.main_window.show()
         return True
         
+    def on_window_focus_in_event(self, *args):
+        """Sets the status icon back to normal if necessary"""
+        self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-blue.png")
+        while gtk.events_pending():
+            gtk.main_iteration()
+            
     def popup_menu(self, *args):
         self.right_click_menu.popup(parent_menu_shell=None, parent_menu_item=None,
                                     func=gtk.status_icon_position_menu,
@@ -202,21 +216,60 @@ class PMS(object):
     
     def retrieve_avatar_from_server(self):
         log.info("Checking for new avatars")
-        users = self.db.cursor.execute("""SELECT DISTINCT username from messages""").fetchall()
-        for user in users:
-            log.debug("Checking %s's avatar" % user[0])
-            av = self.avatars[user[0]]
-            if av.requires_update:
-                log.info("Outdated avatar, downloading")
-                response = self.gae_conn.app_engine_request(data=None, mapping="/usr/%s/avatar" % user[0],
+        #retrieve list
+        try:
+            f = open(self.PROGRAM_DETAILS['home'] + "av_dl_" + self.login.username, "r")
+            last_download = cPickle.load(f)
+            f.close()
+        except IOError:
+            log.debug("no avatar list for this user, downloading all")
+            last_download = "all"
+
+        query = self.db.cursor.execute("""SELECT DISTINCT username
+                                                from messages""").fetchall()
+        users = []
+        for i in range(0, len(query)):
+            users.append(query[i][0])
+        users = ",".join(users)          
+        if len(users) == 0:
+            #user doesnt have any visible messages so,
+            return True
+        response = self.gae_conn.app_engine_request(data={"time" : last_download,
+                                                        "userlist" : users},
+                                                    mapping="/usr/avatarlist")
+        if response != "OK":
+            #fail silently, we have better things to do
+            return True
+        
+        #we have a list of users who uploaded their avatar after our specified time
+        newest = None
+        download_users = []
+        for i in self.gae_conn.iter:
+            if i.tag == "user" and i.text.strip() != "":
+                download_users.append(i.text)
+            if i.tag == "uploaded" and i.text > newest:
+                newest = i.text
+        log.debug(str(download_users))
+        #download these avatars are store in home dir
+        for user in download_users:
+            try:
+                av = self.avatars[user]
+            except KeyError:
+                av = preferences.Avatar(user, os.path.join(self.PROGRAM_DETAILS['home'],
+                                                              "thumbnails") + os.sep)
+            great_success = self.gae_conn.app_engine_request(data=None, mapping="/usr/%s/avatar" % user,
                                                             get_avatar=av.path)
-                self.messages_liststore
-            else:
-                log.debug("Avatar current")
-            #update the main screen with new thumbs
-            for row in self.messages_liststore:
-                if row[2] == user[0]:
-                    row[0] = av.pixbuf
+            if great_success:
+                av.update()
+                #update the main screen with new thumbs
+                log.debug("Updating liststore pixbufs")
+                for row in self.messages_liststore:
+                    if row[2] == user:
+                        row[0] = av.pixbuf
+                #if all this completes correctly we update the time given
+                f = open(self.PROGRAM_DETAILS['home'] + "av_dl_" + self.login.username, "w")
+                cPickle.dump(newest, f)
+                f.close()
         return True
     
 

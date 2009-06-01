@@ -21,7 +21,7 @@ import time
 import datetime
 
 
-def nicetime(past_time, fuzzy=False, length=2):
+def nicetime(past_time, fuzzy=False, length=1):
     """Takes a unix timestamp and returns a nicely formatted string
     3 days, 2 hours ago...etc. fuzzy will leave todays times as Today <time>"""
 
