@@ -87,8 +87,8 @@ class PMS(object):
         self.check_in_progress = False
         self.check_messages()
         self.check_timer = gobject.timeout_add(5000, self.check_messages)
-        self.avatar_timer = gobject.timeout_add(1800000, self.retrieve_avatar_from_server)
-        self.nicetime_timer = gobject.timeout_add(60000, self.update_nicetimes)
+        self.avatar_timer = gobject.timeout_add(60000, self.retrieve_avatar_from_server)
+        self.nicetime_timer = gobject.timeout_add(15000, self.update_nicetimes)
         
     
     def update_nicetimes(self):

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Mon Jun  1 21:57:44 2009 -->
+<!--Generated with glade3 3.4.5 on Mon Jun  1 22:57:57 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="login_window">
     <property name="title" translatable="yes">PMS - Login</property>
@@ -298,6 +298,7 @@
                 <property name="visible">True</property>
                 <child>
                   <widget class="GtkEntry" id="reg_username">
+                    <property name="width_request">100</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="has_focus">True</property>
@@ -334,6 +335,7 @@
                 <property name="visible">True</property>
                 <child>
                   <widget class="GtkEntry" id="reg_password">
+                    <property name="width_request">100</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="visibility">False</property>
@@ -370,8 +372,10 @@
                 <property name="visible">True</property>
                 <child>
                   <widget class="GtkEntry" id="reg_password_check">
+                    <property name="width_request">100</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="visibility">False</property>
                     <signal name="focus_out_event" handler="reg_focus_out"/>
                   </widget>
                   <packing>
@@ -403,6 +407,7 @@
                 <property name="visible">True</property>
                 <child>
                   <widget class="GtkEntry" id="email">
+                    <property name="width_request">100</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="activates_default">True</property>
