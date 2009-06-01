@@ -1,9 +1,13 @@
 #!/usr/bin/env python
-
-import pynotify
+try:
+    import pynotify
+    pynotify.init('PMS Notification')
+except ImportError:
+    #presumably we are on windows
+    pass
 import time
 import gtk
-pynotify.init('PMS Notification')
+
 
 
 class NotificationSystem(object):
@@ -12,6 +16,9 @@ class NotificationSystem(object):
         self.main_program = main_program
     
     def new_message(self, last_msg, msg_count, nicetime, avatar):
+        #this is currently useless on windows
+        if sys.platform == "win32":
+            return
         header = "%(user)s said:" % last_msg
         if msg_count > 1:
             footer = "\nYou have %d other unread messages" % (msg_count - 1,)
