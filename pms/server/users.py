@@ -1,3 +1,4 @@
+#users.py
 # Copyright 2009 Daniel Woodhouse
 #
 #This file is part of pms.
@@ -29,7 +30,17 @@ import logging
 import re
 
 class Add(webapp.RequestHandler):
+    """
+    Mapping: /usr/add
+    """
     def post(self):
+        """
+        Creates a new user
+         Parameters:
+          - name: The name of the new user
+          - password: A sha1 hash of the users password
+          - email: A valid email address for the user
+        """
         name = self.request.get("name")
         salt = server.generate_salt()
         password = hashlib.sha1(self.request.get("password") + salt).hexdigest()
@@ -52,13 +63,20 @@ class Add(webapp.RequestHandler):
             server.response(self, values={"status" : "ERROR -" + str(e)})
 
 class List(webapp.RequestHandler):
+    """Mapping: /usr/list"""
     def get(self):
+        """Retrieves a list of all users"""
         users = models.User.all()
         server.response(self, {"status" : "OK", "users" : users}, "userlist")
 
 class Groups(webapp.RequestHandler):
-    """Get a list of groups that a user is a member of"""
+    """Mapping: /usr/groups/(user)"""
     def get(self, user):
+        """
+        Get a list of groups that a user is a member of
+         :Parameters:
+          - user: The name of the user. This is the tail of the url
+        """
         user = models.User.get_by_key_name(user)
         if user is None:
             return server.response(self, values={"status" : "NOUSER"})
@@ -67,9 +85,14 @@ class Groups(webapp.RequestHandler):
                                "user" : user, }, template="usr-groups")
         
 class ResetPasswordPart1(webapp.RequestHandler):
-    """recieve a new password from user and send out an activation link to their email"""
-    
+    """Mapping: /usr/changepass"""
     def post(self):
+        """
+        Recieve a new password from user and send out an activation link to their email
+         :Parameters:
+          - email: The email address of the user wanting password change
+          - password: The new password  
+        """
         user = models.User.all().filter("email =", self.request.get("email")).get()
         if user is None:
             return server.response(self, values={"status" : "NOUSER"})
@@ -104,9 +127,14 @@ class ResetPasswordPart1(webapp.RequestHandler):
         server.response(self)
         
 class ResetPasswordPart2(webapp.RequestHandler):
-    """Check that the activation link is correct, and change password"""
-    
+    """Mapping: /usr/<name>/changepass/<activation_code>"""
     def get(self, name, activation_code):
+        """Checks the activation code is correct and reset the users password to
+        the temporary one recieved in `pms.server.users.ResetPasswordPart1`
+         :Parameters:
+          - name: The user wanting their password changed
+          - activation_code: An activation code that was emailed to the user
+        """
         user = models.User.get_by_key_name(name)
         if user is None:
             return server.response(self, {"status" : "NOUSER"}, "password_change", content="html")
@@ -123,7 +151,14 @@ class ResetPasswordPart2(webapp.RequestHandler):
         server.response(self, template="password_change", content="html")
         
 class ChangeAvatar(webapp.RequestHandler):
+    """Mapping: /usr/changeavatar"""
     def post(self):
+        """
+        Update the users avatar
+         :Parameters:
+          - `session_data`: See `pms.server.server.is_valid_key`
+          - avatar: An image containing the new avatar
+        """
         user, user_data = server.is_valid_key(self)
         if not user:
             return server.response(self, {"status" : "BADAUTH"})
@@ -138,19 +173,31 @@ class ChangeAvatar(webapp.RequestHandler):
         return server.response(self)
         
 class RetrieveAvatar(webapp.RequestHandler):
+    """Mapping: /usr/<username>/avatar"""
     def get(self, useravatar):
-        req = models.UserAvatar.get_by_key_name(useravatar)
+        """
+        Serves the specified users avatar, or a default if none found
+         Parameters:
+          - username: The name of the user whose avatar is requested
+        """
+        req = models.UserAvatar.get_by_key_name(username)
         if req is None:
-            #self.response.headers['Content-Type'] = "image/png"
             self.redirect("/usr/defaultavatar")
             return
-            #return server.response(self, values={"status" : "NOUSER"})
         self.response.headers['Content-Type'] = "image/png"
         self.response.out.write(req.avatar)
         
 class AvatarList(webapp.RequestHandler):
-    """gets a list of avatars that this user would want to have"""
+    """Mapping: /usr/avatarlist"""
     def post(self):
+        """
+        Outputs a list of avatars for users this user requires the avatar for,
+        uploaded after a certain time. This is desirable if there are many users.
+         :Paramters:
+          - `session_data`: See `pms.server.server.is_valid_key`
+          - time: A unix timestamp of the last downloaded avatar
+          - userlist: A list of users we want to check
+        """
         user, user_details = server.is_valid_key(self)
         last_time = self.request.get("time")
         if not user:
