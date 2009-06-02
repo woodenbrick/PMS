@@ -51,6 +51,7 @@ class PMS(object):
         self.main_window = self.wTree.get_widget("window")
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
         
+
         self.tray_icon = gtk.StatusIcon()
         self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-blue.png")
         self.tray_icon.connect("activate", self.activate_menu, None)
@@ -86,8 +87,8 @@ class PMS(object):
         #set a timer to check messages
         self.check_in_progress = False
         self.check_messages()
-        self.check_timer = gobject.timeout_add(5000, self.check_messages)
-        self.avatar_timer = gobject.timeout_add(60000, self.retrieve_avatar_from_server)
+        self.check_timer = gobject.timeout_add(1235000, self.check_messages)
+        self.avatar_timer = gobject.timeout_add(10000, self.retrieve_avatar_from_server)
         self.nicetime_timer = gobject.timeout_add(15000, self.update_nicetimes)
         
     
@@ -175,12 +176,23 @@ class PMS(object):
         self.check_in_progress = False    
         return True
 
-    def gtk_main_quit(self, widget=None):
-        print widget.name
+    def close_pms(self, widget=None):
+        #remove icon
+        gobject.source_remove(self.check_timer)
+        gobject.source_remove(self.avatar_timer)
+        gobject.source_remove(self.nicetime_timer)
+        self.tray_icon.set_visible(False)
         gtk.main_quit()
+    
+    def destroy_window(self, widget, *args):
+        widget.hide()
+        return True
 
     def on_logout_clicked(self, widget):
         gobject.source_remove(self.check_timer)
+        gobject.source_remove(self.avatar_timer)
+        gobject.source_remove(self.nicetime_timer)
+        self.tray_icon.set_visible(False)
         self.wTree.get_widget("window").destroy()
         login.Login(self.PROGRAM_DETAILS, new_user=True)
     

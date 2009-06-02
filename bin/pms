@@ -55,7 +55,7 @@ parser.add_option('--dev-server', '-d', action="store_true",
 options, args = parser.parse_args()
 
 if options.dev_server:
-    PROGRAM_DETAILS['server'] = "http://127.0.0.1:12345"
+    PROGRAM_DETAILS['server'] = "http://127.0.0.1:8080"
     print 'Using local gae server'
 else:
     PROGRAM_DETAILS['server'] = "http://zxvf.appspot.com"
@@ -63,6 +63,8 @@ else:
 #check what platform we are running on and setup a homefolder
 if sys.platform.startswith("linux2"):
     PROGRAM_DETAILS['home'] = os.path.join(os.environ['HOME'], '.eventnotify') + os.sep
+    if options.dev_server:
+        PROGRAM_DETAILS['home'] = PROGRAM_DETAILS['home'] + "dev" + os.sep
     PROGRAM_DETAILS['homemain'] = os.environ['HOME']
     if not os.path.exists(src_dir):
         PROGRAM_DETAILS['images'] = os.path.join("usr", "share", PROGRAM_DETAILS['name'], "images") + os.sep

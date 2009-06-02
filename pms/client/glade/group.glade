@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Tue May 26 21:22:34 2009 -->
+<!--Generated with glade3 3.4.5 on Mon Jun  1 23:43:07 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="window">
     <property name="width_request">500</property>
@@ -169,18 +169,26 @@
               <widget class="GtkHBox" id="hbox4">
                 <property name="visible">True</property>
                 <child>
-                  <widget class="GtkLabel" id="label2">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">Group name:</property>
-                  </widget>
-                </child>
-                <child>
                   <widget class="GtkEntry" id="group_name">
+                    <property name="width_request">100</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                   </widget>
                   <packing>
+                    <property name="pack_type">GTK_PACK_END</property>
                     <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkLabel" id="label2">
+                    <property name="visible">True</property>
+                    <property name="label" translatable="yes">Group name:</property>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="padding">5</property>
+                    <property name="pack_type">GTK_PACK_END</property>
                   </packing>
                 </child>
               </widget>
@@ -192,18 +200,26 @@
               <widget class="GtkHBox" id="hbox5">
                 <property name="visible">True</property>
                 <child>
-                  <widget class="GtkLabel" id="label3">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">Group password (optional):</property>
-                  </widget>
-                </child>
-                <child>
                   <widget class="GtkEntry" id="group_pass">
+                    <property name="width_request">100</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                   </widget>
                   <packing>
+                    <property name="pack_type">GTK_PACK_END</property>
                     <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkLabel" id="label3">
+                    <property name="visible">True</property>
+                    <property name="label" translatable="yes">Group password (optional):</property>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="padding">5</property>
+                    <property name="pack_type">GTK_PACK_END</property>
                   </packing>
                 </child>
               </widget>
@@ -215,18 +231,27 @@
               <widget class="GtkHBox" id="hbox6">
                 <property name="visible">True</property>
                 <child>
-                  <widget class="GtkLabel" id="label4">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">Description (optional):</property>
-                  </widget>
-                </child>
-                <child>
                   <widget class="GtkEntry" id="description">
+                    <property name="height_request">50</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                   </widget>
                   <packing>
+                    <property name="pack_type">GTK_PACK_END</property>
                     <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkLabel" id="label4">
+                    <property name="visible">True</property>
+                    <property name="yalign">0.20999999344348907</property>
+                    <property name="label" translatable="yes">Description (optional):</property>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="padding">5</property>
+                    <property name="pack_type">GTK_PACK_END</property>
                   </packing>
                 </child>
               </widget>

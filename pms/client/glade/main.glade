@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Sun May 31 16:41:00 2009 -->
+<!--Generated with glade3 3.4.5 on Tue Jun  2 15:34:39 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -55,7 +55,7 @@
   <widget class="GtkWindow" id="window">
     <property name="window_position">GTK_WIN_POS_CENTER</property>
     <signal name="focus_in_event" handler="on_window_focus_in_event"/>
-    <signal name="destroy" handler="gtk_main_quit"/>
+    <signal name="delete_event" handler="destroy_window"/>
     <child>
       <widget class="GtkVBox" id="vbox4">
         <property name="visible">True</property>
@@ -121,7 +121,7 @@
                         <property name="label" translatable="yes">gtk-quit</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="activate" handler="gtk_main_quit"/>
+                        <signal name="activate" handler="close_pms"/>
                       </widget>
                     </child>
                   </widget>
@@ -203,7 +203,6 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-            <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
             <child>
               <widget class="GtkTreeView" id="message_view">
                 <property name="visible">True</property>

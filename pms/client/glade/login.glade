@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Mon Jun  1 22:57:57 2009 -->
+<!--Generated with glade3 3.4.5 on Tue Jun  2 11:42:37 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="login_window">
     <property name="title" translatable="yes">PMS - Login</property>
@@ -275,14 +275,19 @@
           </packing>
         </child>
         <child>
-          <placeholder/>
-        </child>
-        <child>
-          <widget class="GtkLabel" id="register_error">
+          <widget class="GtkLabel" id="something">
             <property name="visible">True</property>
             <property name="label" translatable="yes">Create a new PMS account</property>
             <property name="justify">GTK_JUSTIFY_CENTER</property>
             <property name="wrap">True</property>
+          </widget>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkLabel" id="register_error">
+            <property name="visible">True</property>
           </widget>
           <packing>
             <property name="position">2</property>

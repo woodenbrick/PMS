@@ -18,19 +18,25 @@
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.api import memcache
-import models
+
+import logging
 import hashlib
 import time
 import random
 import string
-import server
 
-import logging
+import server
+import models
+
 class New(webapp.RequestHandler):
+    """
+    Add new messages to the specified group
+    """
     def post(self):
-        """
-        Add a new message to group
-        Requires: name of user, session_key, message, group(s), IP
+        """requires:
+            session data: See pms.server.is_valid_key
+            group: The group the message is been sent to
+            message: The message to be added
         """
         user, user_data = server.is_valid_key(self)
         if user:
@@ -62,10 +68,13 @@ class New(webapp.RequestHandler):
 class Check(webapp.RequestHandler):
     """
     Checks the server for new messages
-    Requires: name of user, session_key, timestamp of last msg recieved, IP
-    groups that you want
     """
     def post(self):
+        """
+        requires:
+           session data: See pms.server.server.is_valid_key
+           time: The timestamp of the last message recieved
+        """
         user, user_data = server.is_valid_key(self)
         if not user:
             return server.response(self, {"status" : "BADAUTH"})

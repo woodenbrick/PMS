@@ -79,7 +79,7 @@ class Login(object):
     def on_entry_key_press_event(self, widget, key):
         #this logs in the user if they press Enter from the password box
         #or focus the passwordbox if press Enter from the username box
-        if key.keyval == 65293:
+        if key.keyval == 65293 or key.keyval == 65289: #enter or tab
             if widget.name == "password_entry":
                 self.on_login_clicked(widget)
             else:
@@ -87,6 +87,7 @@ class Login(object):
                 user = self.db.return_user_details(self.wTree.get_widget("username_entry").get_text())
                 if user is not None:
                     self.wTree.get_widget("password_entry").set_text(user[1])
+                    self.on_login_clicked(widget)
                 self.wTree.get_widget("password_entry").grab_focus()
                 
                 
@@ -153,6 +154,7 @@ class Login(object):
         self.wTree.get_widget("login_window").hide()
         self.wTree.get_widget("reg_username").set_text("")
         self.wTree.get_widget("reg_password").set_text("")
+        self.wTree.get_widget("register_error").set_text("")
         self.wTree.get_widget("email").set_text("")
         self.wTree.get_widget("register_window").show()
         
@@ -167,6 +169,7 @@ class Login(object):
         email = self.wTree.get_widget("email").get_text()
         if not self.sanity_check("email", email):
             return
+        self.wTree.get_widget("register_error").set_text("Creating new account...")
         data = {
             "name" : username,
             "password" : hashlib.sha1(password).hexdigest(),

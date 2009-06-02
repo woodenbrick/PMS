@@ -22,6 +22,7 @@ import gtk
 import gtk.glade
 import pygtk
 import gobject
+import misc
 
 import logger
 
@@ -47,6 +48,7 @@ class GroupWindow():
                 self.group_liststore.append(item + [img_pass, img_member])
         self.wTree.get_widget("groupview").set_model(self.group_liststore)
         self.create_columns()
+        self.wTree.get_widget("group_error").set_text("")
         self.timer = gobject.timeout_add(60000, self.update_refresh_button)
         self.update_refresh_button()
         
@@ -54,8 +56,7 @@ class GroupWindow():
         gobject.source_remove(self.timer)
 
     def update_refresh_button(self):
-        diff = int((time.time() - self.mtime) / 60)
-        self.wTree.get_widget("refresh_label").set_text("Refresh (last done \n%s minutes ago)" % diff)
+        self.wTree.get_widget("refresh_label").set_text("Refresh (last done \n%s)" % misc.nicetime(self.mtime))
     
     
     def check_for_old_grouplist(self):
@@ -252,7 +253,7 @@ class GroupWindow():
     
     def on_create_group_clicked(self, widget):
         response = self.wTree.get_widget("new_dialog").run()
-        self.wTree.get_widget("new_dialog").hide()
+        
     
     def on_group_pass_keypress(self, widget, key):
         if key.keyval == 65293:
@@ -260,7 +261,10 @@ class GroupWindow():
     
     
     def on_group_close(self, widget):
+        """Creates a new group"""
+        self.wTree.get_widget("new_dialog").hide()
         if widget.name == "apply":
+            self.wTree.get_widget("group_error").set_text("Creating new group...")
             values = {
                 "group" : self.wTree.get_widget("group_name").get_text(),
                 "description" : self.wTree.get_widget("description").get_text()
@@ -274,6 +278,7 @@ class GroupWindow():
             if response == "OK":
                 self.update_local_grouplist([values['group'], self.parent.login.username,
                                              values['description'], pass_req, True], create=True)
+                self.wTree.get_widget("group_error").set_text("")
             else:
                 self.wTree.get_widget("group_error").set_text("Error: " +
                                                               self.parent.gae_conn.error)
