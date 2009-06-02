@@ -1,4 +1,6 @@
-# Copyright 2009 Daniel Woodhouse
+#libpms.py
+"""A library to connect to the server and parse its responses"""
+#Copyright 2009 Daniel Woodhouse
 #
 #This file is part of pms.
 #
@@ -14,7 +16,7 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with pms.  If not, see http://www.gnu.org/licenses/
-import gtk
+
 import os
 import sys
 import urllib, urllib2
@@ -22,6 +24,7 @@ import random
 import string
 import hashlib
 import time
+import gtk
 import cPickle
 import threading
 import Queue
@@ -35,7 +38,9 @@ from poster.streaminghttp import register_openers
 
 
 class ThreadedAppEngineRequest(threading.Thread):
-    
+    """
+    Creates a new thread for a request to the server
+    """
     def __init__(self, gae_conn_obj, data, mapping, auto_now, get_avatar, queue):
         self.gae_conn_obj = gae_conn_obj
         self.data = data
@@ -56,6 +61,8 @@ class ThreadedAppEngineRequest(threading.Thread):
 
 
 class AppEngineConnection(object):
+    """Creates a new connection to the GAE"""
+    
     def __init__(self, program_details):
         self.url = program_details['server']
         self.default_values = {}
@@ -64,7 +71,8 @@ class AppEngineConnection(object):
         self.queue = Queue.Queue()
         
     def check_xml_response(self, doc):
-        """Check if our request was valid"""
+        """Returns the status string of the servers response and sets
+        an error message if there was a problem"""
         self.xtree = ET.parse(doc)
         self.iter = self.xtree.getiterator()
         status = self.iter[0].attrib['status']
@@ -76,11 +84,11 @@ class AppEngineConnection(object):
 
     
     def get_tag(self, tag):
-        """returns the first text from a tag"""
+        """Returns the first text from a tag"""
         return self.xtree.find(tag).text
         
     def get_tags(self, tag):
-        """returns a list of texts with tag"""
+        """Returns a list of texts with given tag"""
         l = []
         for i in self.iter:
             if i.tag == tag:
@@ -91,7 +99,14 @@ class AppEngineConnection(object):
         self.password = password
     
     def app_engine_request(self, data, mapping, auto_now=False, get_avatar=False):
-        """This is threaded to keep the gui responsive"""
+        """
+        A wrapper to start a new thread for pms.client.libpms._app_engine_request
+         :Parameters:
+          - data: A dictionary of data to be sent to the server or none for a GET request
+          - mapping: A valid mapping (see `pms.server.server.application` for all valid mappings)
+          - auto_now: True if the current time should be included in the request
+          - get_avatar: True if the request is to download an image
+        """
         request = ThreadedAppEngineRequest(self, data, mapping, auto_now,
                                            get_avatar, self.queue)
         request.daemon = True
@@ -102,7 +117,9 @@ class AppEngineConnection(object):
         return response
     
     def _app_engine_request(self, data, mapping, auto_now=False, get_avatar=False):
-        """For get requests, set data to None"""
+        """
+        `pms.client.libpms.app_engine_request` should be used if you want a threaded request
+        """
         if data is None:
             log.info("GET request: %s" % mapping)
             if get_avatar:
@@ -157,6 +174,9 @@ class AppEngineConnection(object):
         return response
     
     def dump_session_key(self):
+        """
+        Pickles the downloaded session key
+        """
         f = open(self.home_dir + "sessionkey_" + self.default_values['name'], "w")
         log.info("Saving session key")
         cPickle.dump([self.default_values['session_key'], self.expires], f)
@@ -164,8 +184,9 @@ class AppEngineConnection(object):
         
         
     def check_for_session_key(self, username):
-        """check if user has a sessionkey and return sessionkey
-        or False if the key doesnt exist or is outdated"""
+        """
+        Check if there is a pickled session key
+        return sessionkey or False if the key doesn't exist or is outdated"""
         try:
             f = open(self.home_dir + "sessionkey_" + username, "r")
         except IOError:
@@ -180,8 +201,11 @@ class AppEngineConnection(object):
         return self.default_values['session_key']
 
     def send_avatar(self, filename):
-        """A special function for this, since it requires images to be sent which
-        cannot be done in an easy way"""
+        """
+        Send an image to the server
+         :Parameters:
+          - filename: The path to the filename that is to be uploaded
+        """
         register_openers()
         data = {"avatar": open(filename)}
         data.update(self.default_values)
