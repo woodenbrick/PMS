@@ -1,3 +1,7 @@
+#messages.py
+"""
+For adding and retrieving messages
+"""
 # Copyright 2009 Daniel Woodhouse
 #
 #This file is part of pms.
@@ -30,13 +34,15 @@ import models
 
 class New(webapp.RequestHandler):
     """
-    Add new messages to the specified group
+    Mapping /msg/add
     """
     def post(self):
-        """requires:
-            session data: See pms.server.is_valid_key
-            group: The group the message is been sent to
-            message: The message to be added
+        """
+        Add new messages to the specified group
+         :Parameters:
+          - `session_data`: See `pms.server.server.is_valid_key`
+          - `group`: The group the message is been sent to
+          - `message`: The message to be added
         """
         user, user_data = server.is_valid_key(self)
         if user:
@@ -67,13 +73,14 @@ class New(webapp.RequestHandler):
     
 class Check(webapp.RequestHandler):
     """
-    Checks the server for new messages
+    :Mapping: /msg/check
     """
     def post(self):
         """
-        requires:
-           session data: See pms.server.server.is_valid_key
-           time: The timestamp of the last message recieved
+        Checks the server for new messages
+         :Parameters:
+          - session_data: See `pms.server.server.is_valid_key`
+          - time: The timestamp of the last message recieved
         """
         user, user_data = server.is_valid_key(self)
         if not user:
