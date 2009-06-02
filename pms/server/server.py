@@ -1,3 +1,5 @@
+#server.py
+"""Contains mappings and widely used functions by all server modules"""
 # Copyright 2009 Daniel Woodhouse
 #
 #This file is part of pms.
@@ -26,6 +28,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
 from google.appengine.ext.webapp.template import render
 from google.appengine.api import memcache
+
 import models
 import groups
 import users
@@ -35,7 +38,17 @@ import errors
 import logging
 
 def is_valid_key(handler_obj):
-    """Checks if the session key is valid, Returns the user model if True"""
+    """
+    Checks if the session key is valid
+     :Parameters:
+      - handler_obj: The webapp.RequestHandler that called the function which contains
+       - name: The name of the user
+       - session_key: The session key to check
+       - ip: The users IP. The key will be rejected if the IP has changed
+     Returns a tuple containing:
+       - The `models.User` object of the user model, the handler_obj parameters
+       - False, A `pms.server.errors` code
+    """
     user_data = { "name" : handler_obj.request.get("name"),
             "session_key" : handler_obj.request.get("session_key"),
             "ip" : handler_obj.request.remote_addr}
@@ -61,6 +74,14 @@ def is_valid_key(handler_obj):
     return False, "BADAUTH"
 
 def response(handler, values={"status" : "OK" }, template="default", content="xml"):
+    """
+    Output a response to the client
+     :Parameters:
+      - handler: The webapp.RequestHandler that called the function
+      - values: A dictionary of values to be passed to the renderer. Must contain status and either 'OK' or a valid `pms.server.errors.errors`
+      - template: The html/xml template to be rendered, from /templates
+      - content: The Content-Type of the template
+    """
     type = "image" if content == "png" else "text" 
     if values["status"] != "OK":
         values["error"] = errors.errors[values["status"]]
@@ -70,6 +91,9 @@ def response(handler, values={"status" : "OK" }, template="default", content="xm
 
 
 def generate_salt():
+    """
+    Generates a 15 character random string to be used as a password salt, session key etc.
+    """
     salt = []
     st = string.ascii_letters + string.digits
     while len(salt) < 15:
@@ -78,17 +102,20 @@ def generate_salt():
     return "".join(salt)
 
 class GetSessionKey(webapp.RequestHandler):
-
+    """
+    Mapping: /getsessionkey
+    """
     def post(self):
-        """The user should send a request with their
-        username, password&time hash, time, ip"""
+        """
+        Return a new session key for the user. This is valid for 24 hours.
+         :webapp.RequestHandler parameters:
+          - name: Name of the user.
+          - password: A sha1 hash of the users password
+        """
         name = self.request.get("name")
         hash = self.request.get("password")
-        send_time = self.request.get("time")
         ip = self.request.remote_addr
 
-        if time.time() - float(send_time) > 5000:
-            return response(self, {"status" : "BADTIME"})
         user = memcache.get("user-" + name)
         if user is None:
             user = models.User.get_by_key_name(name)
@@ -120,7 +147,17 @@ class GetSessionKey(webapp.RequestHandler):
                         "session_key" : session_key,
                         "expires" : expires}
         response(self, temp_values, template="session")
-    
+        
+        
+class Error(webapp.RequestHandler):
+    def get(self, mapping):
+        """
+        Called when an invalid mapping is recieved
+         :Parameters:
+          - mapping: The url mapping used
+        """
+        self.response.headers['Content-Type'] = 'text/plain'
+        self.response.out.write("404 Not Found: %s" % mapping)    
 
 
 application = webapp.WSGIApplication([
@@ -140,19 +177,17 @@ application = webapp.WSGIApplication([
     
     ('/group/add', groups.Add),
     ('/group/join', groups.Join),
-    ('/group/list', groups.List),#works
-    (r'/group/list/(.+)', groups.Members),#works
+    ('/group/list', groups.List),
+    (r'/group/list/(.+)', groups.Members),
     ('/group/leave', groups.Leave),
     ('/group/changeowner', groups.ChangeOwner),
     ('/group/delete', groups.Delete),
 
-    ('/allmessages', admin.AllMessages), #admin
-    (r'/(.*)', admin.Error),
+    (r'/(.*)', Error),
     ], debug=True)
 
-def main():
-  run_wsgi_app(application)
 
-if __name__ == "__main__":
-  main()
+#: Run the server
+run_wsgi_app(application)
+
 
