@@ -22,6 +22,8 @@ import gtk
 import gtk.glade
 import pygtk
 pygtk.require20()
+import webbrowser
+
 from PIL import Image
 import libpms
 import db
@@ -87,7 +89,8 @@ class PMS(object):
         #set a timer to check messages
         self.check_in_progress = False
         self.check_messages()
-        self.check_timer = gobject.timeout_add(5000, self.check_messages)
+        self.check_timer = gobject.timeout_add(self.preferences.preferences['msg_check'] * 1000,
+                                               self.check_messages)
         self.avatar_timer = gobject.timeout_add(60000, self.retrieve_avatar_from_server)
         self.nicetime_timer = gobject.timeout_add(15000, self.update_nicetimes)
         
@@ -134,7 +137,8 @@ class PMS(object):
             log.info("Check in progress, cancelling")
             return True
         self.check_in_progress = True
-        data = {"time" : self.last_time}
+        #FIXME self.last_time should be always cast as an int
+        data = {"time" : int(self.last_time)}
         response = self.gae_conn.app_engine_request(data, "/msg/check")
         if response == "OK":
             self.update_status_bar("")
@@ -148,13 +152,14 @@ class PMS(object):
         msg_count = 0
         message = {}
         for i in self.gae_conn.iter:
+            print i.tag, i.text
             if i.tag == "date":
                 message[i.tag] = float(i.text)
                 self.db.add_new(message)
                 #add to liststore
                 nicetime = misc.nicetime(message['date'])
                 msg = "from %s to %s\n%s\n%s" % (message['user'], message['group'],
-                                                 nicetime, message['data'])
+                                                 message['date'], message['data'])
                 self.messages_liststore.prepend([self.get_avatar(message["user"]),
                                                  msg, message['user'], message['date']])
                 if message['user'] != self.login.username:
@@ -164,7 +169,7 @@ class PMS(object):
         self.last_time = self.db.last_date()
         if msg_count != 0:
             if not self.main_window.is_active():
-                self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-red.png")
+                self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-yellow.png")
             self.notifier.new_message(message, msg_count, nicetime,
                                       self.get_avatar(message['user']))
         vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
@@ -274,17 +279,17 @@ class PMS(object):
                                                             get_avatar=av.path)
             if great_success:
                 av.update()
-                #update the main screen with new thumbs
-                log.debug("Updating liststore pixbufs")
-                for row in self.messages_liststore:
-                    if row[2] == user:
-                        row[0] = av.pixbuf
+                self.update_liststore_pixbufs(av)
                 #if all this completes correctly we update the time given
                 f = open(self.PROGRAM_DETAILS['home'] + "av_dl_" + self.login.username, "w")
                 cPickle.dump(newest, f)
                 f.close()
         return True
     
+    def update_liststore_pixbufs(self, av_obj):
+        for row in self.messages_liststore:
+            if row[2] == av_obj.username:
+                row[0] = av_obj.pixbuf
 
     def fill_messages(self):
         treeview = self.wTree.get_widget("message_view")
@@ -391,12 +396,19 @@ class PMS(object):
         dialog = gtk.AboutDialog()
         dialog.set_name(self.PROGRAM_DETAILS['name'])
         dialog.set_version(self.PROGRAM_DETAILS['version'])
-        dialog.set_authors("\n".join(self.PROGRAM_DETAILS['authors']))
+        dialog.set_authors(self.PROGRAM_DETAILS['authors'])
         dialog.set_license(self.PROGRAM_DETAILS['licence'])
-        dialog.set_wrap_license(True)
+        dialog.set_wrap_license(False)
         dialog.set_website(self.PROGRAM_DETAILS['website'])
         dialog.set_website_label("Github repository")
         dialog.set_logo(gtk.gdk.pixbuf_new_from_file(self.PROGRAM_DETAILS['logo']))
+        gtk.about_dialog_set_url_hook(self.open_website, self.PROGRAM_DETAILS['website'])
         dialog.run()
         dialog.destroy()
+    
+    def report_bug(self, widget):
+        webbrowser.open_new_tab("http://bugreportsite.com")
         
+    def open_website(dialog, link, user_data):
+        print 'opening', dialog, link, user_data
+        webbrowser.open(link)

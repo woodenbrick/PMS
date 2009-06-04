@@ -78,14 +78,18 @@ class Login(object):
        
     def on_entry_key_press_event(self, widget, key):
         #focus the passwordbox if press Enter from the username box
-        if key.keyval == 65293 or key.keyval == 65289:
-            #if it was enter we focus the password, tab will auto focus it
+        if widget.name == "username_entry":
+            if key.keyval == 65293 or key.keyval == 65289:
+                #if it was enter we focus the password, tab will auto focus it
+                if key.keyval == 65293:
+                    self.wTree.get_widget("password_entry").grab_focus()
+                #get password from db if exists
+                user = self.db.return_user_details(widget.get_text())
+                if user is not None:
+                    self.wTree.get_widget("password_entry").set_text(user[1])
+        if widget.name == "password_entry":
             if key.keyval == 65293:
-                self.wTree.get_widget("password_entry").grab_focus()
-            #get password from db if exists
-            user = self.db.return_user_details(self.wTree.get_widget("username_entry").get_text())
-            if user is not None:
-                self.wTree.get_widget("password_entry").set_text(user[1])
+                self.on_login_clicked(widget)
             
             
     def login_auto_completer(self):

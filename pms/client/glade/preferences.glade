@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Wed May 27 10:35:44 2009 -->
+<!--Generated with glade3 3.4.5 on Thu Jun  4 22:37:32 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="window">
     <property name="visible">True</property>
@@ -19,6 +19,7 @@
             <child>
               <widget class="GtkVBox" id="vbox1">
                 <property name="visible">True</property>
+                <property name="spacing">10</property>
                 <child>
                   <widget class="GtkLabel" id="preference_error">
                     <property name="visible">True</property>
@@ -37,7 +38,7 @@
                       <widget class="GtkSpinButton" id="msg_check">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="adjustment">1 1 60 1 10 0</property>
+                        <property name="adjustment">10 5 200 1 10 0</property>
                       </widget>
                       <packing>
                         <property name="position">1</property>
@@ -46,7 +47,7 @@
                     <child>
                       <widget class="GtkLabel" id="label3">
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">minutes</property>
+                        <property name="label" translatable="yes">seconds</property>
                       </widget>
                       <packing>
                         <property name="position">2</property>

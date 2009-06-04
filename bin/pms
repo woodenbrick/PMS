@@ -15,10 +15,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pms.  If not, see http://www.gnu.org/licenses/
 """
-import gobject
-import gtk
 import pygtk
 pygtk.require20()
+import gobject
+import gtk
 import os
 import sys
 import optparse
@@ -38,7 +38,7 @@ import login
 PROGRAM_DETAILS = {
     "name" : "pms",
     "version" : "0.01",
-    "authors" : ("Daniel Woodhouse", ""),
+    "authors" : ("Daniel Woodhouse",),
     "email" : "wodemoneke@gmail.com",
     "images" : os.path.join(src_dir, "images") + os.sep,
     "glade" : os.path.join(src_dir, "glade") + os.sep,

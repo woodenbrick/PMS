@@ -129,7 +129,7 @@ class GetSessionKey(webapp.RequestHandler):
         st = string.ascii_letters + string.digits
         while len(session_key) < 20:
             session_key.append(random.choice(st))
-        expires = int(time.time() + 1000)
+        expires = int(time.time() + 30)
         session_key = "".join(session_key)
         try:
             sess = models.Session.get_by_key_name(name)
@@ -158,13 +158,18 @@ class Error(webapp.RequestHandler):
         self.response.headers['Content-Type'] = 'text/plain'
         self.response.out.write("404 Not Found: %s" % mapping)    
 
-
+class Debug(webapp.RequestHandler):
+    def get(self):
+        """prints all messages"""
+        messages = models.Message.all()
+        response(self, values={"status" : "OK", "messages" : messages}, template="messages")
+        
 application = webapp.WSGIApplication([
     ('/getsessionkey', GetSessionKey),
     
     ('/msg/add', messages.New),
     ('/msg/check', messages.Check),
-
+    ('/debug', Debug), # disable on deployment
     ('/usr/add', users.Add),
     ('/usr/list', users.List),
     (r'/usr/groups/(.+)', users.Groups),

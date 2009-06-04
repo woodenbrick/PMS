@@ -47,7 +47,7 @@ class Message(db.Model):
     group = db.ReferenceProperty(Group)
     user = db.ReferenceProperty(User)
     comment = db.TextProperty()
-    date = db.FloatProperty()
+    date = db.IntegerProperty()
     
 class GroupMember(db.Model):
     group = db.ReferenceProperty(Group)

@@ -23,6 +23,7 @@ import pygtk
 import gtk.glade
 import urllib
 import time
+import gobject
 
 class PreferencesWindow(object):
     
@@ -48,7 +49,7 @@ class PreferencesWindow(object):
                                                              gtk.RESPONSE_CANCEL,
                                                              gtk.STOCK_OK, gtk.RESPONSE_OK),
                                                     backend=None)
-        self.file_selection.set_current_folder(os.path.split(self.program_details['home'])[0])
+        self.file_selection.set_current_folder(self.program_details['homemain'])
         filter = gtk.FileFilter()
         filter.set_name("Images (jpg, gif, png, bmp)")
         filter.add_pattern("*.png")
@@ -78,7 +79,13 @@ class PreferencesWindow(object):
         
         
     def on_apply_clicked(self, widget):
-        self.preferences['msg_check'] = self.wTree.get_widget("msg_check").get_value()
+        new_msg_check = self.wTree.get_widget("msg_check").get_value()
+        if new_msg_check != self.preferences['msg_check']:
+            #our time check has changed delete old timeout and add new
+            gobject.source_remove(self.parent.check_timer)
+            self.parent.check_timer = gobject.timeout_add(new_msg_check * 1000,
+                                                          self.parent.check_messages)
+            self.preferences['msg_check'] = new_msg_check
         self.preferences['popup'] = self.wTree.get_widget("popup").get_active()
         #check if avatar has changed
         if self.new_avatar:
@@ -91,8 +98,11 @@ class PreferencesWindow(object):
                 self.wTree.get_widget("preference_error").set_text(self.parent.gae_conn.error)
                 return
             else:
-                self.parent.retrieve_avatar_from_server()
+                self.parent.update_liststore_pixbufs(self.parent.avatars[self.parent.login.username])
         self.parent.preferences.save_options()
+        self.wTree.get_widget("window").destroy()
+        
+    def on_cancel_clicked(self, widget):
         self.wTree.get_widget("window").destroy()
 
 
@@ -111,7 +121,7 @@ class Preferences(object):
 
     def load_defaults(self):
         self.preferences = {
-            "msg_check" : 1,
+            "msg_check" : 10,
             "avatar" : os.path.join(self.program_details['home'], "thumbnails",
                                     self.username) + ".thumbnail",
             "popup" : True

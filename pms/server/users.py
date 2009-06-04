@@ -174,7 +174,7 @@ class ChangeAvatar(webapp.RequestHandler):
         
 class RetrieveAvatar(webapp.RequestHandler):
     """Mapping: /usr/<username>/avatar"""
-    def get(self, useravatar):
+    def get(self, username):
         """
         Serves the specified users avatar, or a default if none found
          Parameters:
