@@ -164,13 +164,13 @@ class AppEngineConnection(object):
             #outdated sessionkey, get a newone then redo the request
             sess_data = {"name" : self.default_values['name'],
                          "password" : self.password}
-            new_response = self.app_engine_request(sess_data, "/getsessionkey", auto_now=True)
+            new_response = self._app_engine_request(sess_data, "/getsessionkey", auto_now=True)
             if new_response == "OK":
                 log.info("Redoing defered call")
                 self.default_values["session_key"] = self.get_tag("key")
                 self.expires = int(self.get_tag("expires"))
                 self.dump_session_key()
-                response = self.app_engine_request(data, mapping)
+                response = self._app_engine_request(data, mapping)
         return response
     
     def dump_session_key(self):

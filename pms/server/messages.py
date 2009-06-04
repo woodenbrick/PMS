@@ -50,23 +50,23 @@ class New(webapp.RequestHandler):
             message = self.request.get("message")
             if message == "" or group_name == "":
                 return server.response(self, {"status" : "MISSINGVALUES"})
-            group = memcache.get("group-" + group_name)
-            if group is None:
-                group = models.Group.get_by_key_name(group_name)
+            #group = memcache.get("group-" + group_name)
+            #if group is None:
+            group = models.Group.get_by_key_name(group_name)
             if group is None:
                 return server.response(self, {"status" : "NOTGROUP"})
-            member = memcache.get("member-" + user.name + group.name)
-            if member is None:
-                member = models.GroupMember.all().filter("group =", group).filter("user =", user).get()
+            #member = memcache.get("member-" + user.name + group.name)
+            #if member is None:
+            member = models.GroupMember.all().filter("group =", group).filter("user =", user).get()
             if member is None:
                 return server.response(self, {"status" : "NONMEMBER"})
             #cache member and group
-            memcache.set("member-" + user.name + group.name, member)
-            memcache.set("group-" + group.name, group)
+            #memcache.set("member-" + user.name + group.name, member)
+            #memcache.set("group-" + group.name, group)
             mess = models.Message(user=user, group=group, comment=message, date=time.time())
             mess.put()
             #cache this date for other users
-            memcache.set("last_message-" + group.name, mess.date)
+            #memcache.set("last_message-" + group.name, mess.date)
             server.response(self)
         else:
             server.response(self, {"status" : "BADAUTH"})
@@ -85,24 +85,27 @@ class Check(webapp.RequestHandler):
         user, user_data = server.is_valid_key(self)
         if not user:
             return server.response(self, {"status" : "BADAUTH"})
-        last_time = float(self.request.get("time"))
-        logging.info("Last time: %s" % last_time)
-        membership = memcache.get("user-groups" + user.name)
-        if membership is None:
-            membership = models.GroupMember.all().filter("user =", user)
-            memcache.set("user-groups" + user.name, membership)
+        last_time = float(self.request.get("time")) + 21
+        #membership = memcache.get("user-groups" + user.name)
+        #if membership is None:
+        membership = models.GroupMember.all().filter("user =", user)
+        #    memcache.set("user-groups" + user.name, membership)
         all_messages = []
         for member in membership:
-            last_message = memcache.get("last_message-" + member.group.name)
+            last_message = None #memcache.get("last_message-" + member.group.name)
             if last_message is not None:
                 if last_message < last_time + 1 or last_message == "Unused":
                     continue
             logging.info("Using datastore for %s" % member.group.name)
-            messages = models.Message.all().filter("group =", member.group).filter("date >", last_time + 0.1).fetch(100)
-            if len(messages) > 0:
-                memcache.set("last_message-" + member.group.name, float(messages[-1].date))
-            else:
-                memcache.set("last_message-" + member.group.name, "Unused")
+            logging.info("Last time: %s" % last_time)
+            messages = models.Message.all().filter("group =", member.group).filter(
+                "date >", last_time).fetch(100)
+            for message in messages:
+                logging.info("date: %s" % message.date)
+            #if len(messages) > 0:
+            #    memcache.set("last_message-" + member.group.name, float(messages[-1].date))
+            #else:
+            #    memcache.set("last_message-" + member.group.name, "Unused")
             all_messages.extend(messages)
         server.response(self, values={"status" : "OK", "messages" : all_messages}, template="messages")
 

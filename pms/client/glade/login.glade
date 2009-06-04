@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Tue Jun  2 11:42:37 2009 -->
+<!--Generated with glade3 3.4.5 on Thu Jun  4 00:05:26 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="login_window">
     <property name="title" translatable="yes">PMS - Login</property>
@@ -82,7 +82,6 @@
                     <property name="can_focus">True</property>
                     <property name="visibility">False</property>
                     <property name="activates_default">True</property>
-                    <signal name="key_press_event" handler="on_entry_key_press_event"/>
                   </widget>
                   <packing>
                     <property name="position">1</property>

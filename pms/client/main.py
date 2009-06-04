@@ -87,8 +87,8 @@ class PMS(object):
         #set a timer to check messages
         self.check_in_progress = False
         self.check_messages()
-        self.check_timer = gobject.timeout_add(1235000, self.check_messages)
-        self.avatar_timer = gobject.timeout_add(10000, self.retrieve_avatar_from_server)
+        self.check_timer = gobject.timeout_add(5000, self.check_messages)
+        self.avatar_timer = gobject.timeout_add(60000, self.retrieve_avatar_from_server)
         self.nicetime_timer = gobject.timeout_add(15000, self.update_nicetimes)
         
     
@@ -144,9 +144,9 @@ class PMS(object):
             self.check_in_progress = False
             self.update_status_bar(self.gae_conn.error)
             return True
-        message = {}
-        msg_count = 0
         make_adj = True if self.wTree.get_widget("scrolledwindow").get_vadjustment().value == 0 else False
+        msg_count = 0
+        message = {}
         for i in self.gae_conn.iter:
             if i.tag == "date":
                 message[i.tag] = float(i.text)
@@ -161,13 +161,12 @@ class PMS(object):
                     msg_count += 1
                 continue
             message[i.tag] = i.text
+        self.last_time = self.db.last_date()
         if msg_count != 0:
             if not self.main_window.is_active():
                 self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-red.png")
             self.notifier.new_message(message, msg_count, nicetime,
                                       self.get_avatar(message['user']))
-            #we have new messages, lets update the last_time
-            self.last_time = self.db.last_date()
         vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
         if make_adj:
             vadj.value = -1

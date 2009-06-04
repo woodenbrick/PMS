@@ -32,7 +32,6 @@ from google.appengine.api import memcache
 import models
 import groups
 import users
-import admin
 import messages
 import errors
 import logging
