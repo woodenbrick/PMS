@@ -36,9 +36,11 @@ options = {
 'py2exe' : {
   'packages': 'encodings',
   'includes': 'cairo, pango, pangocairo, atk, gobject',
+  'excludes' : ['_ssl', 'inspect', 'pdb', 'difflib', 'doctest', 'locale', 'calendar']
 },
 #'sdist': {
 #  'formats': 'zip',
 #}
+
 }
 )
