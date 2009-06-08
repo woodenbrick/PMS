@@ -24,6 +24,8 @@ import gtk.glade
 import urllib
 import time
 import gobject
+import logger
+log = logger.new_logger("PREFERENCES.PY")
 
 class PreferencesWindow(object):
     
@@ -35,6 +37,8 @@ class PreferencesWindow(object):
         self.wTree.signal_autoconnect(self)
         self.set_gui()
         self.new_avatar = False
+        self.thumb_path = os.path.join(self.program_details['home'],
+                                       "thumbnails", "_temp.thumbnail")
 
         
     def set_gui(self):
@@ -68,12 +72,9 @@ class PreferencesWindow(object):
             #create a thumbnail
             import Image
             img = Image.open(self.file_selection.get_filename())
-            print img.format, img.size, img.mode
             img.thumbnail((64, 64))
-            thumbnail = os.path.join(self.program_details['home'], "thumbnails",
-                                    "_temp.thumbnail")
-            img.save(thumbnail, img.format)
-            self.wTree.get_widget("avatar").set_from_file(thumbnail)
+            img.save(self.thumb_path, img.format)
+            self.wTree.get_widget("avatar").set_from_file(self.thumb_path)
             self.new_avatar = True
         self.file_selection.destroy()
         
@@ -89,18 +90,23 @@ class PreferencesWindow(object):
         self.preferences['popup'] = self.wTree.get_widget("popup").get_active()
         #check if avatar has changed
         if self.new_avatar:
-            #windows requires the file to be removed
-            os.remove(self.preferences['avatar'])
-            os.rename(os.path.join(self.program_details['home'], "thumbnails",
-                      "_temp.thumbnail"), self.preferences['avatar'])
-            response = self.parent.gae_conn.send_avatar(self.preferences['avatar'])
+            response = self.parent.gae_conn.send_avatar(self.thumb_path)
             if response != "OK":
                 self.wTree.get_widget("preference_error").set_text(self.parent.gae_conn.error)
                 return
+            if sys.platform == "linux2":
+                os.rename(self.thumb_path, self.preferences['avatar'])
             else:
-                self.parent.update_liststore_pixbufs(self.parent.avatars[self.parent.login.username])
+                #XXX
+                #windows magically changes the name of the file by divination
+                #it will freeze the program if it tries to delete old file and rename
+                #no solution yes
+                pass
+            response = self.parent.gae_conn.send_avatar(self.preferences['avatar'])
+            self.wTree.get_widget("window").destroy()
+            self.parent.update_liststore_pixbufs(self.parent.avatars[self.parent.login.username])
         self.parent.preferences.save_options()
-        self.wTree.get_widget("window").destroy()
+
         
     def on_cancel_clicked(self, widget):
         self.wTree.get_widget("window").destroy()

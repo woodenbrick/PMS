@@ -49,15 +49,13 @@ class ThreadedAppEngineRequest(threading.Thread):
         self.queue = queue
         self.get_avatar = get_avatar
         threading.Thread.__init__(self)
-        log.debug("initialised thread: %s" % mapping)
 
         
     def run(self):
-        log.debug("starting thread: %s" % self.mapping)
         response = self.gae_conn_obj._app_engine_request(self.data, self.mapping,
                                                          self.auto_now, self.get_avatar)
         self.queue.put(response)
-        log.debug("end thread: %s\nresponse: %s" % (self.mapping, response))
+
 
 
 class AppEngineConnection(object):
@@ -76,7 +74,6 @@ class AppEngineConnection(object):
         self.xtree = ET.parse(doc)
         self.iter = self.xtree.getiterator()
         status = self.iter[0].attrib['status']
-        log.info("Request status: %s" % status)
         if status != "OK":
             self.error = self.iter[0].text
             log.error(self.error)
@@ -157,7 +154,6 @@ class AppEngineConnection(object):
             log.error(e)
             self.error = str(e)
             return "URLError"
-        log.debug("Checking response")
         response = self.check_xml_response(request)
         if response == "BADAUTH":
             log.info("Outdated sessionkey, attempting renewal")

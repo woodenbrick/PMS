@@ -44,7 +44,8 @@ PROGRAM_DETAILS = {
     "glade" : os.path.join(src_dir, "glade") + os.sep,
     "licence" : licence,
     "website" : "http://github.com/woodenbrick/PMS",
-    "logo" : os.path.join(src_dir, "images", "event-notify-blue.png"),
+    "logo1" : os.path.join(src_dir, "images", "event-notify-blue.png"),
+    "logo2" : os.path.join(src_dir, "images", "event-notify-yellow.png")
 }
 
 parser = optparse.OptionParser(version=":name :version by :authors" % PROGRAM_DETAILS)
@@ -69,10 +70,14 @@ if sys.platform.startswith("linux2"):
     if not os.path.exists(src_dir):
         PROGRAM_DETAILS['images'] = os.path.join("usr", "share", PROGRAM_DETAILS['name'], "images") + os.sep
         PROGRAM_DETAILS['glade'] = os.path.join("usr", "share", PROGRAM_DETAILS['name'], "glade") + os.sep
+        PROGRAM_DETAILS['logo1'] = os.path.join(PROGRAM_DETAILS['images'], "event-notify-blue.png")
+        PROGRAM_DETAILS['logo2'] = os.path.join(PROGRAM_DETAILS['images'], "event-notify-yellow.png")
 else:
     #windows
     PROGRAM_DETAILS['home'] = os.path.join(os.environ['HOMEPATH'], 'eventnotify') + os.sep
     PROGRAM_DETAILS['homemain'] = os.environ['HOMEPATH']
+    PROGRAM_DETAILS['logo1'] = os.path.join(PROGRAM_DETAILS['images'], "event-notify-blue.ico")
+    PROGRAM_DETAILS['logo2'] = os.path.join(PROGRAM_DETAILS['images'], "event-notify-yellow.ico")
 try:
     os.makedirs(os.path.join(PROGRAM_DETAILS['home'], "thumbnails"))
 except OSError:

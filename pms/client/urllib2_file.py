@@ -111,10 +111,10 @@ def send_data(v_vars, v_files, boundary, sock=None):
 			sock.send(buffer)
 			if hasattr(fd, 'seek'):
 				fd.seek(0)
-            while True:
-                chunk = fd.read(CHUNK_SIZE)
-                if not chunk: break
-                sock.send(chunk)
+			while True:
+				chunk = fd.read(CHUNK_SIZE)
+				if not chunk: break
+				sock.send(chunk)
 
 		l += file_size
 	buffer='\r\n'
@@ -158,7 +158,7 @@ class newHTTPHandler(urllib2.BaseHandler):
 			v_vars=[]
 		host = req.get_host()
 		if not host:
-            raise urllib2.URLError('no host given')
+			raise urllib2.URLError('no host given')
 
 		h = http_class(host) # will parse host:port
 		if req.has_data():
@@ -176,7 +176,7 @@ class newHTTPHandler(urllib2.BaseHandler):
 					if not 'Content-length' in req.headers:
 						h.putheader('Content-length', '%d' % len(data))
 		else:
-	   		h.putrequest('GET', req.get_selector())
+			h.putrequest('GET', req.get_selector())
 
 		scheme, sel = urllib.splittype(req.get_selector())
 		sel_host, sel_path = urllib.splithost(sel)
@@ -192,7 +192,7 @@ class newHTTPHandler(urllib2.BaseHandler):
 		try:
 			h.endheaders()
 		except socket.error, err:
-            raise urllib2.URLError(err)
+			raise urllib2.URLError(err)
 
 		if req.has_data():
 			if len(v_files) >0:
@@ -205,13 +205,13 @@ class newHTTPHandler(urllib2.BaseHandler):
 				# "normal" urllib2.urlopen()
 				h.send(data)
 
-	   	code, msg, hdrs = h.getreply()
+		code, msg, hdrs = h.getreply()
 		fp = h.getfile()
 		if code == 200:
-            resp = urllib.addinfourl(fp, hdrs, req.get_full_url())
-            resp.code = code
-            resp.msg = msg
-            return resp
+			resp = urllib.addinfourl(fp, hdrs, req.get_full_url())
+			resp.code = code
+			resp.msg = msg
+			return resp
 		else:
 			return self.parent.error('http', req, fp, code, msg, hdrs)
 

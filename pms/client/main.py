@@ -14,7 +14,7 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with pms.  If not, see http://www.gnu.org/licenses/
-
+import sys
 import os
 import cPickle
 import gobject
@@ -53,13 +53,11 @@ class PMS(object):
         self.main_window = self.wTree.get_widget("window")
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
         
+        if sys.platform == "win32":
+            self.notifier = notification.WindowsNotifier(self)
+        else:
+            self.notifier = notification.LinuxNotifier(self)
 
-        self.tray_icon = gtk.StatusIcon()
-        self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-blue.png")
-        self.tray_icon.connect("activate", self.activate_menu, None)
-        self.tray_icon.connect("popup-menu", self.popup_menu, None)
-        self.notifier = notification.NotificationSystem(self)
-        
         #show icons
         images = ["refresh", "bug", "groups"]
         for i in images:
@@ -137,11 +135,9 @@ class PMS(object):
             log.info("Check in progress, cancelling")
             return True
         self.check_in_progress = True
-        #FIXME self.last_time should be always cast as an int
-        data = {"time" : int(self.last_time)}
+        data = {"time" : self.last_time}
         response = self.gae_conn.app_engine_request(data, "/msg/check")
         if response == "OK":
-            self.update_status_bar("")
             self.update_status_bar("Last update: " + time.strftime("%I:%M:%S %p",
                                                     time.localtime(time.time())), time=True)
         else:
@@ -163,15 +159,14 @@ class PMS(object):
                 self.messages_liststore.prepend([self.get_avatar(message["user"]),
                                                  msg, message['user'], message['date']])
                 if message['user'] != self.login.username:
-                    msg_count += 1
+                    pass
+                msg_count += 1
                 continue
             message[i.tag] = i.text
         self.last_time = self.db.last_date()
         if msg_count != 0:
-            if not self.main_window.is_active():
-                self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-yellow.png")
-            self.notifier.new_message(message, msg_count, nicetime,
-                                      self.get_avatar(message['user']))
+            self.notifier.new_message(message, msg_count,
+                        nicetime, self.get_avatar(message['user']))
         vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
         if make_adj:
             vadj.value = -1
@@ -185,7 +180,7 @@ class PMS(object):
         gobject.source_remove(self.check_timer)
         gobject.source_remove(self.avatar_timer)
         gobject.source_remove(self.nicetime_timer)
-        self.tray_icon.set_visible(False)
+        self.notifier.hide()
         gtk.main_quit()
     
     def destroy_window(self, widget, *args):
@@ -196,11 +191,11 @@ class PMS(object):
         gobject.source_remove(self.check_timer)
         gobject.source_remove(self.avatar_timer)
         gobject.source_remove(self.nicetime_timer)
-        self.tray_icon.set_visible(False)
+        #self.notifier.remove_icon()
         self.wTree.get_widget("window").destroy()
         login.Login(self.PROGRAM_DETAILS, new_user=True)
     
-    def activate_menu(self, *args):
+    def activate_menu(self, *args, **kwargs):
         log.debug("Activating menu")
         if self.main_window.props.visible:
             self.main_window.hide()
@@ -210,9 +205,7 @@ class PMS(object):
         
     def on_window_focus_in_event(self, *args):
         """Sets the status icon back to normal if necessary"""
-        self.tray_icon.set_from_file(self.PROGRAM_DETAILS['images'] + "event-notify-blue.png")
-        while gtk.events_pending():
-            gtk.main_iteration()
+        #self.notifier.set_icon("logo1")
             
     def popup_menu(self, *args):
         self.right_click_menu.popup(parent_menu_shell=None, parent_menu_item=None,
@@ -401,7 +394,7 @@ class PMS(object):
         dialog.set_wrap_license(False)
         dialog.set_website(self.PROGRAM_DETAILS['website'])
         dialog.set_website_label("Github repository")
-        dialog.set_logo(gtk.gdk.pixbuf_new_from_file(self.PROGRAM_DETAILS['logo']))
+        dialog.set_logo(gtk.gdk.pixbuf_new_from_file(self.PROGRAM_DETAILS['logo1']))
         gtk.about_dialog_set_url_hook(self.open_website, self.PROGRAM_DETAILS['website'])
         dialog.run()
         dialog.destroy()

@@ -35,7 +35,6 @@ class DB(object):
         self.db.close()
         
     def create_tables(self, table_list):
-        log.info("Creating tables")
         for query in table_list:
             self.cursor.execute(query)
         self.db.commit()
@@ -89,17 +88,14 @@ class UserDB(DB):
         """Sets a user to be autologged in.
         caveats: the user will only be autologged in if they were the last person
         logged in with a saved password"""
-        log.info("Setting user to autologin: %s" % auto_login)
         self.cursor.execute("""UPDATE users SET auto_login=? WHERE username=?""", (auto_login, username))
         self.db.commit()
     
     def return_user_details(self, username=None):
         """If username is blank, get the last user"""
         if username is None:
-            log.info("Retrieving last user")
             self.cursor.execute("""SELECT * FROM users ORDER BY last_login DESC LIMIT 1""")
         else:
-            log.info("Retrieving specific user: %s" % username)
             self.cursor.execute("""SELECT * FROM users WHERE username=?""", (username,))
         return self.cursor.fetchone()
         
@@ -120,6 +116,7 @@ class UserDB(DB):
         self.cursor.execute("""SELECT avatar_time FROM avatars ORDER BY avatar_time LIMIT 1""")
         last_time = self.cursor.fetchone()
         if last_time is None:
+            log.debug("No avatar time recorded, requesting all")
             return "all"
         return last_time[0]
 
@@ -142,24 +139,20 @@ class MessageDB(DB):
         """Returns a cursor containing the last 30 messages. If group is None
         then messages from all groups are returned"""
         if group is None:
-            log.info("Retrieving messages for all groups")
             self.cursor.execute("SELECT * FROM messages ORDER BY date DESC LIMIT 30")
         else:
-            log.info("Retrieving messages for group %s" % group)
             self.cursor.execute("""SELECT * FROM messages WHERE _group=? ORDER BY date DESC LIMIT 30""",
                                 (group,))
         return self.cursor
     
     
     def add_new(self, record_dict):
-        log.info("Adding new message")
         self.cursor.execute("""INSERT INTO messages (username, _group, message, date)
                             VALUES (:user, :group, :data, :date)""", record_dict)
         self.db.commit()
         
     def last_date(self):
         """Return date of last recieved message"""
-        log.info("Retrieving date of last message")
         self.cursor.execute("SELECT date FROM messages ORDER by date DESC LIMIT 1")
         t = self.cursor.fetchone()
         
@@ -167,7 +160,7 @@ class MessageDB(DB):
             log.info("No messages, using default date of 2 weeks ago")
             #if the user doesnt have any messages locally
             #we will allow messages from the last 2 weeks
-            t = [time.time() - 1209600]
+            t = [int(time.time() - 1209600)]
         else:
             log.debug("Last message sent at: %s" % t[0])
         return t[0]
