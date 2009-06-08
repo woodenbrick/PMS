@@ -25,6 +25,7 @@ import urllib
 import time
 import gobject
 import logger
+import sys
 log = logger.new_logger("PREFERENCES.PY")
 
 class PreferencesWindow(object):
@@ -54,6 +55,9 @@ class PreferencesWindow(object):
                                                              gtk.STOCK_OK, gtk.RESPONSE_OK),
                                                     backend=None)
         self.file_selection.set_current_folder(self.program_details['homemain'])
+        preview = gtk.Image()
+        self.file_selection.set_preview_widget(preview)
+        self.file_selection.connect("update-preview", self.update_preview_cb, preview)        
         filter = gtk.FileFilter()
         filter.set_name("Images (jpg, gif, png, bmp)")
         filter.add_pattern("*.png")
@@ -77,10 +81,20 @@ class PreferencesWindow(object):
             self.wTree.get_widget("avatar").set_from_file(self.thumb_path)
             self.new_avatar = True
         self.file_selection.destroy()
-        
+    
+    
+    def update_preview_cb(self, file_chooser, preview):
+        filename = file_chooser.get_preview_filename()
+        try:
+            pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(filename, 128, 128)
+            preview.set_from_pixbuf(pixbuf)
+            have_preview = True
+        except:
+            have_preview = False
+        file_chooser.set_preview_widget_active(have_preview)
         
     def on_apply_clicked(self, widget):
-        new_msg_check = self.wTree.get_widget("msg_check").get_value()
+        new_msg_check = int(self.wTree.get_widget("msg_check").get_value())
         if new_msg_check != self.preferences['msg_check']:
             #our time check has changed delete old timeout and add new
             gobject.source_remove(self.parent.check_timer)
@@ -99,8 +113,9 @@ class PreferencesWindow(object):
             else:
                 #XXX
                 #windows magically changes the name of the file by divination
-                #it will freeze the program if it tries to delete old file and rename
-                #no solution yes
+                #actually no, it will freeze the program if it tries to delete
+                #old file and rename
+                #no solution yet
                 pass
             response = self.parent.gae_conn.send_avatar(self.preferences['avatar'])
             self.wTree.get_widget("window").destroy()
