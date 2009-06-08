@@ -1,0 +1,80 @@
+"""Windows version of binary"""
+#!/usr/bin/env python
+# Copyright 2009 Daniel Woodhouse
+
+licence = """
+pms is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+pms is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with pms.  If not, see http://www.gnu.org/licenses/
+"""
+import pygtk
+pygtk.require20()
+import gobject
+import gtk
+import os
+import sys
+import optparse
+import cPickle
+import shutil
+import os
+from client import login
+
+#we cant rely on __file__ in a py2exe dist
+if hasattr(sys, "frozen"):
+    src_dir = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
+else:
+    src_dir = os.path.dirname(unicode(__file__, sys.getfilesystemencoding()))
+
+PROGRAM_DETAILS = {
+    "name" : "pms",
+    "version" : "0.01",
+    "authors" : ("Daniel Woodhouse",),
+    "email" : "wodemoneke@gmail.com",
+    "images" : os.path.join(src_dir, "images") + os.sep,
+    "glade" : os.path.join(src_dir, "glade") + os.sep,
+    "licence" : licence,
+    "website" : "http://github.com/woodenbrick/PMS",
+    "logo1" : os.path.join(src_dir, "images", "event-notify-blue.png"),
+    "logo2" : os.path.join(src_dir, "images", "event-notify-yellow.png")
+}
+
+parser = optparse.OptionParser(version=":name :version by :authors" % PROGRAM_DETAILS)
+parser.add_option('--error-log', '-e', action="store_true",
+                  help=("logs all stderr messages to the home directory (error.log)"))
+parser.add_option('--dev-server', '-d', action="store_true",
+                  help=("Use the local google dev app server"))
+options, args = parser.parse_args()
+
+if options.dev_server:
+    PROGRAM_DETAILS['server'] = "http://127.0.0.1:8080"
+    print 'Using local gae server'
+else:
+    PROGRAM_DETAILS['server'] = "http://zxvf.appspot.com"
+
+
+#windows
+PROGRAM_DETAILS['home'] = os.path.join(os.environ['HOMEPATH'], 'eventnotify') + os.sep
+PROGRAM_DETAILS['homemain'] = os.environ['HOMEPATH']
+PROGRAM_DETAILS['logo1'] = os.path.join(PROGRAM_DETAILS['images'], "event-notify-blue.ico")
+PROGRAM_DETAILS['logo2'] = os.path.join(PROGRAM_DETAILS['images'], "event-notify-yellow.ico")
+
+try:
+    os.makedirs(os.path.join(PROGRAM_DETAILS['home'], "thumbnails"))
+except OSError:
+    pass
+
+shutil.copy(PROGRAM_DETAILS['images'] + "avatar-default.png",
+                os.path.join(PROGRAM_DETAILS['home'], "thumbnails", "avatar-default.png"))
+
+gobject.threads_init()
+login.Login(PROGRAM_DETAILS)
+gtk.main()
