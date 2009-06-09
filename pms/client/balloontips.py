@@ -95,22 +95,17 @@ class DemoTaskbar(Taskbar):
 
     def __init__(self, parent):
         Taskbar.__init__(self)
-        print 'hello hello'
         self.parent = parent
         hinst = win32gui.GetModuleHandle(None)
-        print 'i can say'
         flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-        print 'hello'
         try:
             icon = win32gui.LoadImage(hinst, "default.ico",
                                       win32con.IMAGE_ICON, 0, 0, flags)
         except:
             icon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
-        print 'made it'
         self.setIcon(icon)
-        print ' one more dune to go'
         self.show()
-        print 'fuck!'
+
         
     def onClick(self):
         self.parent.activate_menu()
@@ -130,7 +125,6 @@ class DemoTaskbar(Taskbar):
         return 1
 
     def onDoubleClick(self):
-        print "you double clicked, bye!"
         win32gui.PostQuitMessage(0)
 
     def new_message(self, title, message, timeout=5):

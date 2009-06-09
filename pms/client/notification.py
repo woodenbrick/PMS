@@ -23,7 +23,7 @@ class NotificationSystem(object):
             footer = "You have %d other unread messages" % (msg_count - 1,)
         else:
             footer = ""
-        formatted_msg = "%s %s (sent %s)" % (last_msg['data'], nicetime, footer)
+        formatted_msg = "%s (sent %s) %s" % (last_msg['data'], nicetime, footer)
         self.popup(header, formatted_msg, avatar)
         
 

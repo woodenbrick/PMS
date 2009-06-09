@@ -35,6 +35,7 @@ import threading
 import logger
 import misc
 import notification
+import facebookstatus
 
 
 log = logger.new_logger("MAIN")
@@ -80,17 +81,22 @@ class PMS(object):
             else:
                 popup.destroy()
         else:
+            self.facebook_status = facebookstatus.FaceBookStatus(self)
+            self.facebook_timer = gobject.timeout_add(25000, self.check_facebook_status)
             self.main_window.show()
         self.avatars = {}
         self.last_time = self.db.last_date()
         self.fill_messages()
         #set a timer to check messages
         self.check_in_progress = False
+        self.facebook_check_in_progress = False
         self.check_messages()
         self.check_timer = gobject.timeout_add(self.preferences.preferences['msg_check'] * 1000,
                                                self.check_messages)
         self.avatar_timer = gobject.timeout_add(60000, self.retrieve_avatar_from_server)
         self.nicetime_timer = gobject.timeout_add(15000, self.update_nicetimes)
+        self.check_facebook_status()
+        
         
     
     def update_nicetimes(self):
@@ -107,27 +113,76 @@ class PMS(object):
             self.wTree.get_widget("main_error").set_text(message)
     
     def check_key(self, widget, key):
+        #XXX connect this with the combobox the "key" needs to be taken into account
+        if self.group_box.get_active_text() == "Facebook":
+            if self.wTree.get_widget("new_message").get_buffer().get_char_count() >= 255:
+                self.wTree.get_widget("main_error").set_text("Facebook messages have a maximum length of 255 characters.")
+                self.wTree.get_widget("send_message").set_sensitive(False)
+                return
+            else:
+                self.wTree.get_widget("send_message").set_sensitive(True)
         if key.keyval == 65293:
-            self.on_send_message_clicked(widget) 
-
+            self.on_send_message_clicked(widget)
 
     def on_send_message_clicked(self, widget):
         """Sends a new message to the server"""
-        self.wTree.get_widget("send_message").set_sensitive(False)
-        self.update_status_bar("Sending message...")
         buffer = self.wTree.get_widget("new_message").get_buffer()
         start, end = buffer.get_bounds()
-        data = {'message' : buffer.get_text(start, end).strip(),
-        'group' : self.group_box.get_active_text()}
-        response = self.gae_conn.app_engine_request(data, "/msg/add")
-        self.wTree.get_widget("send_message").set_sensitive(True)
-        if response == "OK":
-            buffer.set_text("")
-            self.update_status_bar("Message sent")
-            #self.check_messages()
+        message = buffer.get_text(start, end).strip()
+        self.wTree.get_widget("send_message").set_sensitive(False)
+        
+        if self.group_box.get_active_text() == "Facebook":
+            self.update_status_bar("Updating status...")
+            self.facebook_status.change_status(message)
         else:
-            self.update_status_bar(self.gae_conn.error)
-            
+            self.update_status_bar("Sending message...")
+            data = {'message' : message,
+            'group' : self.group_box.get_active_text()}
+            response = self.gae_conn.app_engine_request(data, "/msg/add")
+            if response == "OK":
+                buffer.set_text("")
+                buffer.place_cursor(buffer.get_iter_at_offset(0))
+                self.update_status_bar("Message sent")
+            else:
+                self.update_status_bar(self.gae_conn.error)
+        self.wTree.get_widget("send_message").set_sensitive(True)
+        
+    def check_facebook_status(self):
+        if self.facebook_check_in_progress:
+            log.info("Facebook check in progress, cancelling")
+            return True
+        self.facebook_check_in_progress = True
+        make_adj = True if self.wTree.get_widget("scrolledwindow").get_vadjustment().value == 0 else False
+        messages = self.facebook_status.get_friends_status()
+        for message in messages:
+            #self.db.add_new(message)
+            #add to liststore
+
+            nicetime = misc.nicetime(message['status']['time'])
+            msg = "from %s to %s\n%s\n%s" % (message['name'], "Facebook",
+                                         message['status']['message'],
+                                         nicetime)
+            self.messages_liststore.prepend([self.get_avatar(message["name"],
+                                                             facebook=message['pic_square']),
+                                         msg, message['name'], message['status']['time']])
+        if len(messages) > 0:
+            self.login.db.cursor.execute("""update facebook set last_time=?
+                                      where uid=?""", (messages[0]['status']['time'],
+                                                       self.facebook_status.fb.uid))
+            self.login.db.db.commit()
+            self.facebook_status.last_time = messages[-1]['status']['time']
+            msg = {'user' : messages[-1]['name'], 'data': messages[-1]['status']['message']}
+            self.notifier.new_message(msg, len(messages),
+                        nicetime, self.get_avatar(messages[-1]['name'],
+                                                  messages[-1]['pic_square']))
+        vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
+        if make_adj:
+            vadj.value = -1
+        while gtk.events_pending():
+            gtk.main_iteration(False)
+        self.facebook_check_in_progress = False
+        return True
+
 
     def check_messages(self):
         #prevent check from multiple instances running
@@ -148,7 +203,6 @@ class PMS(object):
         msg_count = 0
         message = {}
         for i in self.gae_conn.iter:
-            print i.tag, i.text
             if i.tag == "date":
                 message[i.tag] = float(i.text)
                 self.db.add_new(message)
@@ -177,10 +231,16 @@ class PMS(object):
 
     def close_pms(self, widget=None):
         #remove icon
+        self.notifier.hide()
+        self.main_window.hide()
         gobject.source_remove(self.check_timer)
         gobject.source_remove(self.avatar_timer)
         gobject.source_remove(self.nicetime_timer)
-        self.notifier.hide()
+        try:
+            gobject.source_remove(self.facebook_timer)
+        except AttributeError:
+            pass
+        #XXX kill/wait for requests to finish
         gtk.main_quit()
     
     def destroy_window(self, widget, *args):
@@ -191,31 +251,42 @@ class PMS(object):
         gobject.source_remove(self.check_timer)
         gobject.source_remove(self.avatar_timer)
         gobject.source_remove(self.nicetime_timer)
-        #self.notifier.remove_icon()
+        try:
+            gobject.source_remove(self.facebook_timer)
+        except AttributeError:
+            pass
+        self.notifier.hide()
         self.wTree.get_widget("window").destroy()
         login.Login(self.PROGRAM_DETAILS, new_user=True)
     
     def activate_menu(self, *args, **kwargs):
-        log.debug("Activating menu")
-        if self.main_window.props.visible:
+        #if self.main_window.props.visible:
+        if self.main_window.is_active():
             self.main_window.hide()
         else:
-            self.main_window.show()
+            self.main_window.present()
         return True
         
     def on_window_focus_in_event(self, *args):
         """Sets the status icon back to normal if necessary"""
-        #self.notifier.set_icon("logo1")
+        self.notifier.set_icon("logo1")
             
     def popup_menu(self, *args):
         self.right_click_menu.popup(parent_menu_shell=None, parent_menu_item=None,
                                     func=gtk.status_icon_position_menu,
                                         button=args[1], activate_time=args[2],
-                                        data=self.tray_icon)
+                                        data=self.notifier.tray_icon)
     
-    def get_avatar(self, username):
+    def get_avatar(self, username, facebook=False):
         """Takes a username and returns a pixbuf of their avatar
         or the default if none found"""
+        if facebook:
+            try:
+                av = self.avatars[facebook].pixbuf
+            except KeyError:
+                avatar_path = os.path.join(self.PROGRAM_DETAILS['home'], "thumbnails", "facebook") + os.sep
+                self.avatars[facebook] = preferences.Avatar(facebook, avatar_path, facebook)
+                return self.avatars[facebook].pixbuf
         try:
             av = self.avatars[username].pixbuf
             return av
@@ -351,24 +422,35 @@ class PMS(object):
         """Add/remove a single new group to the users groups"""
         if add:
             self.user_groups.insert(0, group_name)
+            if group_name == "Facebook":
+                self.facebook_status = facebookstatus.FaceBookStatus(self)
         else:
             self.user_groups.remove(group_name)
+            if group_name == "Facebook":
+                self.facebook_status = None
+                gobject.source_remove(self.facebook_timer)
         f = open(self.PROGRAM_DETAILS['home'] + "%s_user_groups" % self.login.username, "w")
         cPickle.dump(self.user_groups, f)
         self.fill_groups(regenerate=True)
         return self.user_groups
         
-        
+            
     
     def fill_groups(self, regenerate=False):
         if not regenerate:
             self.group_box = gtk.combo_box_new_text()
+            self.group_box.connect("changed", self.group_box_changed)
             self.set_groups()
         if len(self.user_groups) == 0:
             return False
         liststore = gtk.ListStore(str)
         self.group_box.set_model(liststore)
         self.wTree.get_widget("combo_container").pack_start(self.group_box)
+        if "Facebook" in self.user_groups:
+            self.facebook_status = facebookstatus.FaceBookStatus(self)
+            self.facebook_timer = gobject.timeout_add(100000, self.check_facebook_status)
+        else:
+            self.facebook_status = None
         for item in self.user_groups:
             self.group_box.append_text(item)
         self.group_box.set_active(0)
@@ -403,5 +485,4 @@ class PMS(object):
         webbrowser.open_new_tab("http://bugreportsite.com")
         
     def open_website(dialog, link, user_data):
-        print 'opening', dialog, link, user_data
         webbrowser.open(link)

@@ -118,9 +118,9 @@ class PreferencesWindow(object):
                 #no solution yet
                 pass
             response = self.parent.gae_conn.send_avatar(self.preferences['avatar'])
-            self.wTree.get_widget("window").destroy()
             self.parent.update_liststore_pixbufs(self.parent.avatars[self.parent.login.username])
         self.parent.preferences.save_options()
+        self.wTree.get_widget("window").destroy()
 
         
     def on_cancel_clicked(self, widget):
@@ -157,14 +157,22 @@ class Preferences(object):
 
 class Avatar(object):
     
-    def __init__(self, username, dir, default=False):
+    def __init__(self, username, dir, facebook=False):
         self.username = username
-        self.path = dir + username + ".thumbnail"
+        if facebook:
+            pic_square = facebook.split("/")[-1]
+            self.path = dir + pic_square
+        else:
+            self.path = dir + username + ".thumbnail"
         try:
             self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
         except:
-            shutil.copy(dir + "avatar-default.png", self.path)
-            self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
+            if facebook:
+                urllib.urlretrieve(facebook, dir + pic_square)
+                self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
+            else:
+                shutil.copy(dir + "avatar-default.png", self.path)
+                self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
         self.stat_time = os.stat(dir).st_mtime
         
     

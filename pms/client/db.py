@@ -56,6 +56,13 @@ class UserDB(DB):
             """CREATE TABLE IF NOT EXISTS `avatars` (
                 `username` varchar(50),
                 `avatar_time` int(20)
+            )""",
+            
+            """CREATE TABLE IF NOT EXISTS `facebook` (
+                `username` varchar(50),
+                `session_key` varchar(255),
+                `uid` int(20),
+                `last_time` int(20)
             )"""
         ]
         self.create_tables(tables)
@@ -83,7 +90,8 @@ class UserDB(DB):
                             (username,))
         self.db.commit()
         
-        
+    
+    
     def auto_login_user(self, username, auto_login):
         """Sets a user to be autologged in.
         caveats: the user will only be autologged in if they were the last person
@@ -119,6 +127,9 @@ class UserDB(DB):
             log.debug("No avatar time recorded, requesting all")
             return "all"
         return last_time[0]
+    
+        
+
 
 class MessageDB(DB):
     
