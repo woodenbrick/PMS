@@ -62,6 +62,7 @@ class UserDB(DB):
                 `username` varchar(50),
                 `session_key` varchar(255),
                 `uid` int(20),
+                `expiry` int(20),
                 `last_time` int(20)
             )"""
         ]
@@ -154,7 +155,7 @@ class MessageDB(DB):
         else:
             self.cursor.execute("""SELECT * FROM messages WHERE _group=? ORDER BY date DESC LIMIT 30""",
                                 (group,))
-        return self.cursor
+        return self.cursor.fetchall()
     
     
     def add_new(self, record_dict):

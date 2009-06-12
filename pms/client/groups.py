@@ -241,6 +241,7 @@ class GroupWindow():
                 else:
                     values["password"] = hashlib.sha1(self.wTree.get_widget("join_group_pass").get_text()).hexdigest()
             self.wTree.get_widget("group_error").set_text("Joining group %s..." % values['group'])
+
             response = self.parent.gae_conn.app_engine_request(values, "/group/join")
             if response == "OK":
                 self.change_membership()
@@ -248,8 +249,6 @@ class GroupWindow():
             else:
                 self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
             
-            
-    
     
     def on_create_group_clicked(self, widget):
         response = self.wTree.get_widget("new_dialog").run()

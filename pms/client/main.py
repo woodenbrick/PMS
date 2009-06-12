@@ -23,7 +23,8 @@ import gtk.glade
 import pygtk
 pygtk.require20()
 import webbrowser
-
+import pango
+import cgi
 from PIL import Image
 import libpms
 import db
@@ -36,7 +37,7 @@ import logger
 import misc
 import notification
 import facebookstatus
-
+import threading
 
 log = logger.new_logger("MAIN")
 
@@ -101,10 +102,10 @@ class PMS(object):
     
     def update_nicetimes(self):
         for row in self.messages_liststore:
-            old_info = row[1].split("\n") 
-            old_info[1] = misc.nicetime(row[3])
-            row[1] = "\n".join(old_info)
-            return True
+            st = row[1].split("<i>")
+            st[1] = """<i>%s</i></span>\n""" % misc.nicetime(row[3])
+            row[1] = "".join(st)
+        return True
     
     def update_status_bar(self, message, time=False):
         if time:
@@ -113,7 +114,6 @@ class PMS(object):
             self.wTree.get_widget("main_error").set_text(message)
     
     def check_key(self, widget, key):
-        #XXX connect this with the combobox the "key" needs to be taken into account
         if self.group_box.get_active_text() == "Facebook":
             if self.wTree.get_widget("new_message").get_buffer().get_char_count() >= 255:
                 self.wTree.get_widget("main_error").set_text("Facebook messages have a maximum length of 255 characters.")
@@ -121,6 +121,8 @@ class PMS(object):
                 return
             else:
                 self.wTree.get_widget("send_message").set_sensitive(True)
+        if widget.name == "group_combo_box":
+            return
         if key.keyval == 65293:
             self.on_send_message_clicked(widget)
 
@@ -132,8 +134,17 @@ class PMS(object):
         self.wTree.get_widget("send_message").set_sensitive(False)
         
         if self.group_box.get_active_text() == "Facebook":
+            if not self.facebook_status.has_publish_permission:
+                dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL,
+                                           gtk.MESSAGE_INFO, gtk.BUTTONS_NONE,
+                                           """PMS requires extra permissions from Facebook before it can update your status.  After you have granted permission, click OK""")
+                dialog.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
+                dialog.run()
+                dialog.destroy()
             self.update_status_bar("Updating status...")
-            self.facebook_status.change_status(message)
+            great_success = self.facebook_status.change_status(message)
+            if great_success != "HIGH FIVE!":
+                self.wTree.get_widget("main_error").set_text(great_success)
         else:
             self.update_status_bar("Sending message...")
             data = {'message' : message,
@@ -154,27 +165,18 @@ class PMS(object):
         self.facebook_check_in_progress = True
         make_adj = True if self.wTree.get_widget("scrolledwindow").get_vadjustment().value == 0 else False
         messages = self.facebook_status.get_friends_status()
-        for message in messages:
-            #self.db.add_new(message)
-            #add to liststore
-
-            nicetime = misc.nicetime(message['status']['time'])
-            msg = "from %s to %s\n%s\n%s" % (message['name'], "Facebook",
-                                         message['status']['message'],
-                                         nicetime)
-            self.messages_liststore.prepend([self.get_avatar(message["name"],
-                                                             facebook=message['pic_square']),
-                                         msg, message['name'], message['status']['time']])
+        if messages == "Error":
+            log.info("Error checking facebook aborting")
+            self.facebook_status.new_session(update=True)
+            self.facebook_check_in_progress = False
+            return True
         if len(messages) > 0:
+            self.render_messages(messages, "Facebook")
             self.login.db.cursor.execute("""update facebook set last_time=?
-                                      where uid=?""", (messages[0]['status']['time'],
+                                      where uid=?""", (messages[-1]['status']['time'],
                                                        self.facebook_status.fb.uid))
             self.login.db.db.commit()
             self.facebook_status.last_time = messages[-1]['status']['time']
-            msg = {'user' : messages[-1]['name'], 'data': messages[-1]['status']['message']}
-            self.notifier.new_message(msg, len(messages),
-                        nicetime, self.get_avatar(messages[-1]['name'],
-                                                  messages[-1]['pic_square']))
         vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
         if make_adj:
             vadj.value = -1
@@ -200,27 +202,20 @@ class PMS(object):
             self.update_status_bar(self.gae_conn.error)
             return True
         make_adj = True if self.wTree.get_widget("scrolledwindow").get_vadjustment().value == 0 else False
-        msg_count = 0
+        messages = []
         message = {}
+        local_user = False
         for i in self.gae_conn.iter:
             if i.tag == "date":
                 message[i.tag] = float(i.text)
                 self.db.add_new(message)
-                #add to liststore
-                nicetime = misc.nicetime(message['date'])
-                msg = "from %s to %s\n%s\n%s" % (message['user'], message['group'],
-                                                 message['date'], message['data'])
-                self.messages_liststore.prepend([self.get_avatar(message["user"]),
-                                                 msg, message['user'], message['date']])
-                if message['user'] != self.login.username:
-                    pass
-                msg_count += 1
+                if message['user'] == self.login.username:
+                    local_user = True
+                messages.append(message)
                 continue
             message[i.tag] = i.text
+        self.render_messages(messages, "Check_Msg", local_user=local_user)
         self.last_time = self.db.last_date()
-        if msg_count != 0:
-            self.notifier.new_message(message, msg_count,
-                        nicetime, self.get_avatar(message['user']))
         vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
         if make_adj:
             vadj.value = -1
@@ -283,6 +278,7 @@ class PMS(object):
         if facebook:
             try:
                 av = self.avatars[facebook].pixbuf
+                return av
             except KeyError:
                 avatar_path = os.path.join(self.PROGRAM_DETAILS['home'], "thumbnails", "facebook") + os.sep
                 self.avatars[facebook] = preferences.Avatar(facebook, avatar_path, facebook)
@@ -355,17 +351,39 @@ class PMS(object):
             if row[2] == av_obj.username:
                 row[0] = av_obj.pixbuf
 
+    def render_messages(self, messages, type, notify=True, local_user=False):
+        #user to group \n messagebody \n time
+        message_body = """\n<span foreground='red'><b>%s -> %s</b></span>\n%s\n<span foreground="dark gray"><i>%s</i></span>\n"""
+        for message in messages:
+            if type == "Facebook":
+                data_tuple = (self.get_avatar(message["name"],
+                                              facebook=message['pic_square']),
+                              message['name'], "Facebook", message['status']['message'],
+                              message['status']['time'])
+            elif type == "Check_Msg":
+                data_tuple = (self.get_avatar(message["user"]),
+                              message['user'], message['group'], message['data'],
+                              message['date'])
+                self.db.add(message)
+            else:
+                data_tuple = (self.get_avatar(message[0]), message[0], message[1],
+                              message[2], message[3])                                    
+            self.messages_liststore.prepend([data_tuple[0], message_body %
+                                             (data_tuple[1], data_tuple[2],
+                                              cgi.escape(data_tuple[3]), misc.nicetime(data_tuple[4])),
+                                             data_tuple[1], data_tuple[4]])
+        #if the user wants popups
+        if len(messages) > 0 and notify and local_user is False:
+            self.notifier.new_message(data_tuple, len(messages),
+                                      misc.nicetime(data_tuple[4]), data_tuple[0])
+
+
     def fill_messages(self):
         treeview = self.wTree.get_widget("message_view")
         self.messages_liststore = gtk.ListStore(gtk.gdk.Pixbuf, str, str, float)
         treeview.set_model(self.messages_liststore)
         messages = self.db.message_list()
-        for message in messages:
-            self.messages_liststore.append([self.get_avatar(message[0]), "from " + message[0] + " to " +
-                                                 message[1] + "\n" +
-                                                 misc.nicetime(message[3]) + "\n"
-                                                 + message[2] + "\n", message[0],
-                                                 message[3]])
+        self.render_messages(messages, "DB", notify=False)
         col = gtk.TreeViewColumn("Pic")
         cell = gtk.CellRendererPixbuf()
         col.pack_start(cell, False)
@@ -377,11 +395,12 @@ class PMS(object):
         col.set_spacing(10)
         treeview.append_column(col)
         
-        col = gtk.TreeViewColumn("Text")
         cell = gtk.CellRendererText()
-        col.pack_start(cell, False)
-        col.set_attributes(cell, text=1)
+        col = gtk.TreeViewColumn("Text", cell)
+        col.set_attributes(cell, markup=1)
         col.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+        cell.props.wrap_mode = pango.WRAP_WORD_CHAR
+        cell.props.wrap_width = 270
         col.set_min_width(100)
         col.set_max_width(250)
         col.set_resizable(True)
@@ -439,12 +458,14 @@ class PMS(object):
     def fill_groups(self, regenerate=False):
         if not regenerate:
             self.group_box = gtk.combo_box_new_text()
-            self.group_box.connect("changed", self.group_box_changed)
+
             self.set_groups()
         if len(self.user_groups) == 0:
             return False
         liststore = gtk.ListStore(str)
         self.group_box.set_model(liststore)
+        self.group_box.set_name("group_combo_box")
+        self.group_box.connect("changed", self.check_key, None)
         self.wTree.get_widget("combo_container").pack_start(self.group_box)
         if "Facebook" in self.user_groups:
             self.facebook_status = facebookstatus.FaceBookStatus(self)

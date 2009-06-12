@@ -208,4 +208,21 @@ class AppEngineConnection(object):
         datagen, headers = multipart_encode(data)
         request = urllib2.Request(self.url + "/usr/changeavatar", datagen, headers)
         return self.check_xml_response(urllib2.urlopen(request))
+import facebook       
+class ThreadedFBConnection(threading.Thread):
+    
+    def __init__(self, fblib_call, data, queue):
+        self.fblib_call = fblib_call
+        self.data = data
+        self.queue = queue
+        threading.Thread.__init__(self)
+
+        
+    def run(self):
+        try:
+            response = self.fblib_call(self.data)
+            self.queue.put(response)
+        except facebook.FacebookError, e:
+            self.queue.put("Error")
+            log.debug(e)
         

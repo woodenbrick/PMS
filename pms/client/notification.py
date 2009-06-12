@@ -8,6 +8,7 @@ except ImportError:
 import time
 import gtk
 import sys
+import cgi
 
 class NotificationSystem(object):
     
@@ -18,12 +19,14 @@ class NotificationSystem(object):
     def new_message(self, last_msg, msg_count, nicetime, avatar):
         if not self.main_program.main_window.is_active():
             self.set_icon("logo2")
-        header = "%(user)s said:" % last_msg
+        header = "%s -> %s" % (last_msg[1], last_msg[2])
         if msg_count > 1:
             footer = "You have %d other unread messages" % (msg_count - 1,)
         else:
             footer = ""
-        formatted_msg = "%s (sent %s) %s" % (last_msg['data'], nicetime, footer)
+
+        formatted_msg = "%s\n%s\n%s" % (cgi.escape(last_msg[3]), nicetime, footer)
+        print formatted_msg
         self.popup(header, formatted_msg, avatar)
         
 
