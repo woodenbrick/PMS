@@ -26,7 +26,6 @@ import libpms
 import db
 import main
 import cPickle
-import logger
 from settings import Settings
 from misc import new_logger
 log = new_logger("login.py", Settings.LOGGING_LEVEL)

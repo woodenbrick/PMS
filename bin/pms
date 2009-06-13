@@ -28,10 +28,10 @@ import logging
 if sys.platform == "win32":
     #check if we are running from src or an executable
     if hasattr(sys, "frozen"):
-        #XXX this needs to take into account the /bin
-        src_dir = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
+        src_dir = os.path.realpath(os.path.join(os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding())), ".."))
     else:
-        src_dir = os.path.dirname(unicode(__file__, sys.getfilesystemencoding()))
+        src_dir = os.path.realpath(os.path.join(os.path.dirname(unicode(__file__, sys.getfilesystemencoding())), ".."))
+    sys.path.insert(0, src_dir)
 else:
     #linux, check if running from src or executable 
     src_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))

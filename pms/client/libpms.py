@@ -30,7 +30,6 @@ import threading
 import Queue
 
 from xml.etree import ElementTree as ET
-import logger
 from settings import Settings
 from misc import new_logger
 log = new_logger("libpms.py", Settings.LOGGING_LEVEL)
