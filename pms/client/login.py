@@ -27,18 +27,18 @@ import db
 import main
 import cPickle
 import logger
-
-log = logger.new_logger("LOGIN")
+from settings import Settings
+from misc import new_logger
+log = new_logger("login.py", Settings.LOGGING_LEVEL)
 
 
 class Login(object):
     
-    def __init__(self, PROGRAM_DETAILS, new_user=False):
-        self.PROGRAM_DETAILS = PROGRAM_DETAILS
-        self.wTree = gtk.glade.XML(self.PROGRAM_DETAILS['glade'] + "login.glade")
+    def __init__(self, new_user=False):
+        self.wTree = gtk.glade.XML(Settings.GLADE + "login.glade")
         self.wTree.signal_autoconnect(self)
-        self.gae_conn = libpms.AppEngineConnection(self.PROGRAM_DETAILS)
-        self.db = db.UserDB(self.PROGRAM_DETAILS['home'] + "usersDB")
+        self.gae_conn = libpms.AppEngineConnection()
+        self.db = db.UserDB(Settings.HOME + "usersDB")
         user_details = self.db.return_user_details()
         self.login_auto_completer()
         if user_details is None or new_user is True:
@@ -71,8 +71,13 @@ class Login(object):
 
     def show_main(self, dump=False):
         self.gae_conn.set_password(self.password)
+        self.db.cursor.execute("""UPDATE users SET auto_login=? WHERE username=?""",
+                               (self.wTree.get_widget("auto_login").get_active(),
+                                self.username))
+        self.db.db.commit()
         self.on_login_window_destroy(quit=False)
-        main.PMS(self)
+        Settings.USERNAME = self.username
+        main.PMS(self.gae_conn, self.db)
         
         
        
@@ -122,7 +127,7 @@ class Login(object):
             self.db.update_login_time(self.username)
             if self.wTree.get_widget("remember_password").get_active():
                 self.db.add_user(self.username, self.password)
-                self.db.auto_login_user(self.username, self.wTree.get_widget("auto_login").get_active())
+                
             self.gae_conn.dump_session_key()
             self.show_main()
         else:

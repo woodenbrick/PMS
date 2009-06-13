@@ -31,7 +31,9 @@ import Queue
 
 from xml.etree import ElementTree as ET
 import logger
-log = logger.new_logger("LIBPMS")
+from settings import Settings
+from misc import new_logger
+log = new_logger("libpms.py", Settings.LOGGING_LEVEL)
 
 from poster.encode import multipart_encode
 from poster.streaminghttp import register_openers
@@ -61,10 +63,8 @@ class ThreadedAppEngineRequest(threading.Thread):
 class AppEngineConnection(object):
     """Creates a new connection to the GAE"""
     
-    def __init__(self, program_details):
-        self.url = program_details['server']
+    def __init__(self):
         self.default_values = {}
-        self.home_dir = program_details['home']
         self.error = ""
         self.queue = Queue.Queue()
         
@@ -118,17 +118,17 @@ class AppEngineConnection(object):
         `pms.client.libpms.app_engine_request` should be used if you want a threaded request
         """
         if data is None:
-            log.info("GET request: %s" % mapping)
+            log.debug("GET request: %s" % mapping)
             if get_avatar:
-                log.info("%s %s %s" % (self.url, mapping, get_avatar))
+                log.debug("%s %s %s" % (Settings.SERVER, mapping, get_avatar))
                 try:
-                    req = urllib.urlretrieve(self.url + mapping, get_avatar)
+                    req = urllib.urlretrieve(Settings.SERVER + mapping, get_avatar)
                     return True
                 except:
                     return False
                 
             try:
-                request = urllib2.urlopen(self.url + mapping)
+                request = urllib2.urlopen(Settings.SERVER + mapping)
             except urllib2.URLError, e:
                 log.error(e)
                 self.error = str(e)
@@ -145,11 +145,10 @@ class AppEngineConnection(object):
         except KeyError:
             pass
         encoded_values = urllib.urlencode(data)
-        log.info("POST request: %s" % mapping)
+        log.debug("POST request: %s" % mapping)
         log.debug("POST DATA %s" % data)
         try:
-            request = urllib2.urlopen(self.url + mapping, encoded_values)
-            log.debug("Request successful")
+            request = urllib2.urlopen(Settings.SERVER + mapping, encoded_values)
         except urllib2.URLError, e:
             log.error(e)
             self.error = str(e)
@@ -173,7 +172,7 @@ class AppEngineConnection(object):
         """
         Pickles the downloaded session key
         """
-        f = open(self.home_dir + "sessionkey_" + self.default_values['name'], "w")
+        f = open(Settings.HOME + "sessionkey_" + self.default_values['name'], "w")
         log.info("Saving session key")
         cPickle.dump([self.default_values['session_key'], self.expires], f)
         f.close()
@@ -184,7 +183,7 @@ class AppEngineConnection(object):
         Check if there is a pickled session key
         return sessionkey or False if the key doesn't exist or is outdated"""
         try:
-            f = open(self.home_dir + "sessionkey_" + username, "r")
+            f = open(Settings.HOME + "sessionkey_" + username, "r")
         except IOError:
             log.info("No session key available")
             return False
@@ -206,8 +205,9 @@ class AppEngineConnection(object):
         data = {"avatar": open(filename)}
         data.update(self.default_values)
         datagen, headers = multipart_encode(data)
-        request = urllib2.Request(self.url + "/usr/changeavatar", datagen, headers)
+        request = urllib2.Request(Settings.SERVER + "/usr/changeavatar", datagen, headers)
         return self.check_xml_response(urllib2.urlopen(request))
+        
 import facebook       
 class ThreadedFBConnection(threading.Thread):
     

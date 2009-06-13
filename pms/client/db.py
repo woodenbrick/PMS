@@ -20,9 +20,9 @@ from xml.etree import ElementTree as ET
 import time
 import libpms
 import datetime
-import logger
-
-log = logger.new_logger("DATABASE")
+from misc import new_logger
+from settings import Settings
+log = new_logger("database.py", Settings.LOGGING_LEVEL)
 
 class DB(object):
     
@@ -91,14 +91,6 @@ class UserDB(DB):
                             (username,))
         self.db.commit()
         
-    
-    
-    def auto_login_user(self, username, auto_login):
-        """Sets a user to be autologged in.
-        caveats: the user will only be autologged in if they were the last person
-        logged in with a saved password"""
-        self.cursor.execute("""UPDATE users SET auto_login=? WHERE username=?""", (auto_login, username))
-        self.db.commit()
     
     def return_user_details(self, username=None):
         """If username is blank, get the last user"""

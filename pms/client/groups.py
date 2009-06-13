@@ -22,21 +22,19 @@ import gtk
 import gtk.glade
 import pygtk
 import gobject
-import misc
-
-import logger
-
-log = logger.new_logger("GROUP")
+from settings import Settings
+from misc import new_logger, nicetime
+log = new_logger("group.py", Settings.LOGGING_LEVEL)
 
 class GroupWindow():
     def __init__(self, parent):
         self.parent = parent
-        self.wTree = gtk.glade.XML(self.parent.PROGRAM_DETAILS['glade'] + "group.glade")
+        self.wTree = gtk.glade.XML(Settings.GLADE + "group.glade")
         self.wTree.signal_autoconnect(self)
         self.wTree.get_widget("group_error").set_text("Loading groups")
-        self.grouplist_file = self.parent.PROGRAM_DETAILS['home'] + "grouplist_" + self.parent.login.username
-        self.columns = ["name", "owner", "description", "password", "membership", "passimg", "memimage"]
-        
+        self.grouplist_file = Settings.HOME + "grouplist_" + Settings.USERNAME
+        self.columns = ["name", "owner", "description", "password", "membership", "", ""]
+        self.wTree.get_widget("window").set_icon_from_file(Settings.LOGO1)
         self.group_list = self.check_for_old_grouplist()
         if not self.group_list:
             self.group_list = self.new_grouplist()
@@ -56,7 +54,7 @@ class GroupWindow():
         gobject.source_remove(self.timer)
 
     def update_refresh_button(self):
-        self.wTree.get_widget("refresh_label").set_text("Refresh (last done \n%s)" % misc.nicetime(self.mtime))
+        self.wTree.get_widget("refresh_label").set_text("Refresh (last done \n%s)" % nicetime(self.mtime))
     
     
     def check_for_old_grouplist(self):
@@ -87,7 +85,7 @@ class GroupWindow():
             return
         all_groups_tree = self.parent.gae_conn.xtree
         response =  self.parent.gae_conn.app_engine_request(None, "/usr/groups/%s" %
-                                                            self.parent.login.username)
+                                                            Settings.USERNAME)
         if response != "OK":
             self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
             return
@@ -131,13 +129,14 @@ class GroupWindow():
                 img_pass = self.create_pixbuf(item[3], False)
                 img_member = self.create_pixbuf(item[4])
                 self.group_liststore.append(item + [img_pass, img_member])
+        self.update_refresh_button()
                 
     def create_pixbuf(self, value, member=True):
         if value is False:
-            return  gtk.gdk.pixbuf_new_from_file(self.parent.PROGRAM_DETAILS['images'] + "blank.png")
+            return  gtk.gdk.pixbuf_new_from_file(Settings.IMAGES + "blank.png")
         if member:
-            return gtk.gdk.pixbuf_new_from_file(self.parent.PROGRAM_DETAILS['images'] + "member.png")
-        return gtk.gdk.pixbuf_new_from_file(self.parent.PROGRAM_DETAILS['images'] + "password.png")
+            return gtk.gdk.pixbuf_new_from_file(Settings.IMAGES + "member.png")
+        return gtk.gdk.pixbuf_new_from_file(Settings.IMAGES + "password.png")
         
 
     def create_columns(self):
@@ -275,7 +274,7 @@ class GroupWindow():
                 pass_req = False
             response = self.parent.gae_conn.app_engine_request(values, "/group/add")
             if response == "OK":
-                self.update_local_grouplist([values['group'], self.parent.login.username,
+                self.update_local_grouplist([values['group'], Settings.USERNAME,
                                              values['description'], pass_req, True], create=True)
                 self.wTree.get_widget("group_error").set_text("")
             else:
@@ -319,7 +318,7 @@ class GroupWindow():
 
     def auto_message(self, action, group):
         """adds a message of type [left, joined, created] groups"""
-        data = {'message' : "%s has %s the group %s" % (self.parent.login.username,
+        data = {'message' : "%s has %s the group %s" % (Settings.USERNAME,
                                           action, group),
                 'group' : group}
         response = self.parent.gae_conn.app_engine_request(data, "/msg/add")

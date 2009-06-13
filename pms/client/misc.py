@@ -19,7 +19,17 @@
 
 import time
 import datetime
+import logging
 
+def new_logger(name, level):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
 
 def nicetime(past_time, fuzzy=False, length=1):
     """Takes a unix timestamp and returns a nicely formatted string
@@ -29,7 +39,7 @@ def nicetime(past_time, fuzzy=False, length=1):
     current_time = time.localtime(time.time())[0:6]
     strings = ["year", "month", "day", "hour", "minute", "second"]
 
-
+    
     sentence = []
     for i in range(0, len(strings)):
         diff = current_time[i] - past_time[i]
@@ -43,10 +53,10 @@ def nicetime(past_time, fuzzy=False, length=1):
             continue
         plural = "" if diff == 1 else "s"
         sentence.append(str(diff) + " " + strings[i] + plural)
-    
     if len(sentence) > 0:
         return ", ".join(sentence[0:length]) + " ago."
-
+    else:
+        return "a few moments ago."
 
 def get_weeks(days):
     weeks = int(days / 7)

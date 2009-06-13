@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 # Copyright 2009 Daniel Woodhouse
+#
+#pms is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+#
+#pms is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with pms.  If not, see http://www.gnu.org/licenses/
 
-licence = """
-pms is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-pms is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with pms.  If not, see http://www.gnu.org/licenses/
-"""
 import pygtk
 pygtk.require20()
 import gobject
@@ -24,64 +23,68 @@ import sys
 import optparse
 import cPickle
 import shutil
+import logging
 
-
-launch_dir = os.path.dirname(__file__)
-src_dir = os.path.realpath(os.path.join(launch_dir, "..", "pms", "client"))
-if os.path.exists(src_dir + os.sep + "libpms.py"):
-    sys.path.insert(0, src_dir)
+if sys.platform == "win32":
+    #check if we are running from src or an executable
+    if hasattr(sys, "frozen"):
+        #XXX this needs to take into account the /bin
+        src_dir = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
+    else:
+        src_dir = os.path.dirname(unicode(__file__, sys.getfilesystemencoding()))
 else:
-    src_dir = "/usr/share/pms"
+    #linux, check if running from src or executable 
+    src_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
+    if not os.path.exists(os.path.join(src_dir, "pms")):
+        src_dir = os.path.join("usr", "share", "pms")
+    else:
+        sys.path.insert(0, src_dir)
+
+from pms.client.settings import Settings
 from pms.client import login
 
-PROGRAM_DETAILS = {
-    "name" : "pms",
-    "version" : "0.01",
-    "authors" : ("Daniel Woodhouse",),
-    "email" : "wodemoneke@gmail.com",
-    "images" : os.path.join(src_dir, "images") + os.sep,
-    "glade" : os.path.join(src_dir, "glade") + os.sep,
-    "licence" : licence,
-    "website" : "http://github.com/woodenbrick/PMS",
-    "logo1" : os.path.join(src_dir, "images", "event-notify-blue.ico"),
-    "logo2" : os.path.join(src_dir, "images", "event-notify-yellow.ico")
-}
+Settings.IMAGES = os.path.join(src_dir, "pms", "client", "images") + os.sep
+Settings.GLADE = os.path.join(src_dir, "pms", "client", "glade") + os.sep
+Settings.LOGO1 = Settings.IMAGES + "event-notify-blue.ico"
+Settings.LOGO2 = Settings.IMAGES + "event-notify-yellow.ico"
 
-parser = optparse.OptionParser(version=":name :version by :authors" % PROGRAM_DETAILS)
+try:
+    Settings.HOME = os.path.join(os.environ['HOME'], '.eventnotify') + os.sep
+    Settings.HOME_MAIN = os.environ['HOME']
+except KeyError:    
+    Settings.HOME = os.path.join(os.environ['HOMEPATH'], 'eventnotify') + os.sep
+    Settings.HOME_MAIN = os.environ['HOMEPATH']
+
+parser = optparse.OptionParser(version="%s %s by %s" % (Settings.NAME,
+                                                        Settings.VERSION,
+                                                        Settings.AUTHOR))
 parser.add_option('--error-log', '-e', action="store_true",
                   help=("logs all stderr messages to the home directory (error.log)"))
-parser.add_option('--dev-server', '-d', action="store_true",
+parser.add_option('--local-server', '-l', action="store_true",
                   help=("Use the local google dev app server"))
+parser.add_option('--debug', '-d', action="store_true",
+                  help=("Show debug messages"))
 options, args = parser.parse_args()
 
-if options.dev_server:
-    PROGRAM_DETAILS['server'] = "http://127.0.0.1:8080"
-    print 'Using local gae server'
+if options.local_server:
+    Settings.SERVER = "http://127.0.0.1:8080"
+    Settings.HOME = Settings.HOME + "dev" + os.sep
 else:
-    PROGRAM_DETAILS['server'] = "http://zxvf.appspot.com"
+    Settings.SERVER = "http://zxvf.appspot.com"
 
-#check what platform we are running on and setup a homefolder
-if sys.platform.startswith("linux2"):
-    PROGRAM_DETAILS['home'] = os.path.join(os.environ['HOME'], '.eventnotify') + os.sep
-    if options.dev_server:
-        PROGRAM_DETAILS['home'] = PROGRAM_DETAILS['home'] + "dev" + os.sep
-    PROGRAM_DETAILS['homemain'] = os.environ['HOME']
-    if not os.path.exists(src_dir):
-        PROGRAM_DETAILS['images'] = os.path.join("usr", "share", PROGRAM_DETAILS['name'], "images") + os.sep
-        PROGRAM_DETAILS['glade'] = os.path.join("usr", "share", PROGRAM_DETAILS['name'], "glade") + os.sep
-
+if options.debug:
+    Settings.LOGGING_LEVEL = logging.DEBUG
 else:
-    #windows
-    PROGRAM_DETAILS['home'] = os.path.join(os.environ['HOMEPATH'], 'eventnotify') + os.sep
-    PROGRAM_DETAILS['homemain'] = os.environ['HOMEPATH']
+    Settings.LOGGING_LEVEL = logging.INFO
+
 try:
-    os.makedirs(os.path.join(PROGRAM_DETAILS['home'], "thumbnails", "facebook"))
+    os.makedirs(os.path.join(Settings.HOME, "thumbnails", "facebook"))
+    shutil.copy(Settings.IMAGES + "avatar-default.png",
+                os.path.join(Settings.HOME, "thumbnails", "avatar-default.png"))
 except OSError:
     pass
 
-shutil.copy(PROGRAM_DETAILS['images'] + "avatar-default.png",
-                os.path.join(PROGRAM_DETAILS['home'], "thumbnails", "avatar-default.png"))
 
 gobject.threads_init()
-login.Login(PROGRAM_DETAILS)
+login.Login()
 gtk.main()

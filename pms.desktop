@@ -1,0 +1,10 @@
+
+[Desktop Entry]
+Type=Application
+Name=PMS
+Comment=Private Microblogging Service
+Exec=/usr/bin/pms
+Terminal=false
+Categories=Internet;
+StartupNotify=false
+Icon=/usr/share/pms/images/event-notify-blue.ico

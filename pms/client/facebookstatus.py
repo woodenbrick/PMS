@@ -2,20 +2,20 @@ import facebook
 import webbrowser
 import cPickle
 import time
-import logger
 import libpms
 import Queue
 import gtk
-log = logger.new_logger("facebookstatus.py")
+from settings import Settings
+from misc import new_logger
+log = new_logger("facebookstatus.py", Settings.LOGGING_LEVEL)
 
 class FaceBookStatus(object):
     def __init__(self, parent):
         self.parent = parent
-        self.db = self.parent.login.db
+        self.db = self.parent.user_db
         self.queue = Queue.Queue()
-        self.program_details = parent.PROGRAM_DETAILS
         self.api_key = "26d3226223a91268db2a4915cd7e0b69"
-        self.secret_key = open(self.program_details['home'] + "facebook_secret", "r").readline().strip()
+        self.secret_key = open(Settings.HOME + "facebook_secret", "r").readline().strip()
         self.fb = facebook.Facebook(self.api_key, self.secret_key)
         self.new_session()
         #self.add_permission("offline_access")
@@ -25,7 +25,7 @@ class FaceBookStatus(object):
         auth_values = self.db.cursor.execute("""select session_key, uid, expiry,
                                                           last_time from
                                                         facebook where username=?""",
-                                                        (self.parent.login.username,)).fetchone()
+                                                        (Settings.USERNAME,)).fetchone()
         log.info(auth_values)
         if auth_values is not None and update is False:
             log.debug("Authorised user")
@@ -33,7 +33,7 @@ class FaceBookStatus(object):
             self.fb.uid = auth_values[1]
             self.fb.session_key_expires = auth_values[2]
             self.last_time = auth_values[3]
-            log.info("sesskey: %s uid: %s expires: %s" % (self.fb.session_key, self.fb.uid,
+            log.debug("sesskey: %s uid: %s expires: %s" % (self.fb.session_key, self.fb.uid,
                                                           self.fb.session_key_expires))
         else:
             self.db.cursor.execute("""delete from facebook where username=?""",
@@ -43,9 +43,10 @@ class FaceBookStatus(object):
             self.fb.auth.createToken()
             self.fb.login()
             self.last_time = 0
+            #XXX needs to be guified
             raw_input("Allow the app access in your browser then press any key to continue")
             auth_values = self.fb.auth.getSession()
-            log.info(auth_values)
+            log.debug(auth_values)
             self.db.cursor.execute("""insert into facebook (username, session_key,
                                                 uid, expiry, last_time) values (?, ?, ?, ?, ?)""",
                                                 (self.parent.login.username,

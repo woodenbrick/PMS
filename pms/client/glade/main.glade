@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Thu Jun  4 14:18:47 2009 -->
+<!--Generated with glade3 3.4.5 on Fri Jun 12 21:52:17 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -22,24 +22,27 @@
       </widget>
     </child>
     <child>
-      <widget class="GtkImageMenuItem" id="menuitem4">
+      <widget class="GtkCheckMenuItem" id="notifications">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">Join group</property>
+        <property name="tooltip" translatable="yes">Enable/Disable popup bubbles</property>
+        <property name="label" translatable="yes">Show popups?</property>
         <property name="use_underline">True</property>
-        <signal name="activate" handler="show_groups"/>
-        <child internal-child="image">
-          <widget class="GtkImage" id="menu-item-image1">
-            <property name="visible">True</property>
-            <property name="stock">gtk-dialog-authentication</property>
-          </widget>
-        </child>
+        <signal name="toggle" handler="on_notifications_toggled"/>
+        <signal name="toggled" handler="on_notifications_toggled"/>
       </widget>
     </child>
     <child>
-      <widget class="GtkSeparatorMenuItem" id="sep">
+      <widget class="GtkImageMenuItem" id="sep">
         <property name="visible">True</property>
-        <property name="label" translatable="yes">menuitem3</property>
+        <property name="label" translatable="yes">Logout</property>
         <property name="use_underline">True</property>
+        <signal name="activate" handler="close_pms" object="logout"/>
+        <child internal-child="image">
+          <widget class="GtkImage" id="menu-item-image1">
+            <property name="visible">True</property>
+            <property name="stock">gtk-jump-to</property>
+          </widget>
+        </child>
       </widget>
     </child>
     <child>
@@ -53,6 +56,7 @@
     </child>
   </widget>
   <widget class="GtkWindow" id="window">
+    <property name="title" translatable="yes">PMS</property>
     <property name="window_position">GTK_WIN_POS_CENTER</property>
     <signal name="focus_in_event" handler="on_window_focus_in_event"/>
     <signal name="delete_event" handler="destroy_window"/>
@@ -106,7 +110,7 @@
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Logout</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_logout_clicked"/>
+                        <signal name="activate" handler="close_pms" object="logout=True"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="menu-item-image7">
                             <property name="visible">True</property>
@@ -210,7 +214,6 @@
                 <property name="headers_clickable">False</property>
                 <property name="rules_hint">True</property>
                 <property name="enable_search">False</property>
-                <property name="enable_grid_lines">GTK_TREE_VIEW_GRID_LINES_HORIZONTAL</property>
               </widget>
             </child>
           </widget>

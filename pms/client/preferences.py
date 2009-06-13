@@ -24,28 +24,27 @@ import gtk.glade
 import urllib
 import time
 import gobject
-import logger
 import sys
-log = logger.new_logger("PREFERENCES.PY")
+from settings import Settings
+from misc import new_logger
+log = new_logger("Preferences.py", Settings.LOGGING_LEVEL)
 
 class PreferencesWindow(object):
     
     def __init__(self, parent):
         self.parent = parent
-        self.program_details = self.parent.PROGRAM_DETAILS
-        self.preferences = self.parent.preferences.preferences
-        self.wTree = gtk.glade.XML(self.program_details['glade'] + "preferences.glade")
+        self.preferences = self.parent.preferences
+        self.wTree = gtk.glade.XML(Settings.GLADE + "preferences.glade")
         self.wTree.signal_autoconnect(self)
         self.set_gui()
         self.new_avatar = False
-        self.thumb_path = os.path.join(self.program_details['home'],
-                                       "thumbnails", "_temp.thumbnail")
+        self.thumb_path = os.path.join(Settings.IMAGES, "thumbnails", "_temp.thumbnail")
 
         
     def set_gui(self):
-        self.wTree.get_widget("msg_check").set_value(self.preferences["msg_check"])
-        self.wTree.get_widget("avatar").set_from_file(self.preferences["avatar"])  
-        self.wTree.get_widget("popup").set_active(self.preferences["popup"])
+        self.wTree.get_widget("msg_check").set_value(self.preferences.msg_check)
+        self.wTree.get_widget("avatar").set_from_file(self.preferences.avatar)  
+        self.wTree.get_widget("popup").set_active(self.preferences.popup)
     
     def change_avatar(self, widget):
         self.file_selection = gtk.FileChooserDialog(title="Select an avatar", parent=None, 
@@ -54,7 +53,7 @@ class PreferencesWindow(object):
                                                              gtk.RESPONSE_CANCEL,
                                                              gtk.STOCK_OK, gtk.RESPONSE_OK),
                                                     backend=None)
-        self.file_selection.set_current_folder(self.program_details['homemain'])
+        self.file_selection.set_current_folder(Settings.HOMEMAIN)
         preview = gtk.Image()
         self.file_selection.set_preview_widget(preview)
         self.file_selection.connect("update-preview", self.update_preview_cb, preview)        
@@ -95,13 +94,14 @@ class PreferencesWindow(object):
         
     def on_apply_clicked(self, widget):
         new_msg_check = int(self.wTree.get_widget("msg_check").get_value())
-        if new_msg_check != self.preferences['msg_check']:
+        if new_msg_check != self.preferences.msg_check:
             #our time check has changed delete old timeout and add new
             gobject.source_remove(self.parent.check_timer)
             self.parent.check_timer = gobject.timeout_add(new_msg_check * 1000,
                                                           self.parent.check_messages)
-            self.preferences['msg_check'] = new_msg_check
-        self.preferences['popup'] = self.wTree.get_widget("popup").get_active()
+            self.preferences.msg_check = new_msg_check
+        self.preferences.popup = self.wTree.get_widget("popup").get_active()
+        self.parent.wTree.get_widget("notifications").set_active(self.preferences.popup)
         #check if avatar has changed
         if self.new_avatar:
             response = self.parent.gae_conn.send_avatar(self.thumb_path)
@@ -117,8 +117,8 @@ class PreferencesWindow(object):
                 #old file and rename
                 #no solution yet
                 pass
-            response = self.parent.gae_conn.send_avatar(self.preferences['avatar'])
-            self.parent.update_liststore_pixbufs(self.parent.avatars[self.parent.login.username])
+            response = self.parent.gae_conn.send_avatar(self.preferences.avatar)
+            self.parent.update_liststore_pixbufs(self.parent.avatars[Settings.USERNAME])
         self.parent.preferences.save_options()
         self.wTree.get_widget("window").destroy()
 
@@ -128,30 +128,25 @@ class PreferencesWindow(object):
 
 
 class Preferences(object):
-    def __init__(self, program_details, username):
-        self.username = username
-        self.preference_file = "preferences_" + self.username
-        self.program_details = program_details
+    def __init__(self):
         try:
-            f = open(self.program_details['home'] + self.preference_file, "r")
-            self.preferences = cPickle.load(f)
+            f = open(Settings.HOME + "preferences_" + Settings.USERNAME, "r")
+            self.msg_check, self.avatar, self.popup = cPickle.load(f)
             f.close()
         except IOError:
             self.load_defaults()
 
 
     def load_defaults(self):
-        self.preferences = {
-            "msg_check" : 10,
-            "avatar" : os.path.join(self.program_details['home'], "thumbnails",
-                                    self.username) + ".thumbnail",
-            "popup" : True
-        }
+        self.msg_check = 10
+        self.avatar = os.path.join(Settings.HOME, "thumbnails",
+                                    Settings.USERNAME) + ".thumbnail"
+        self.popup = True
     
 
     def save_options(self):
-        f = open(self.program_details['home'] + self.preference_file, "w")
-        cPickle.dump(self.preferences, f)
+        f = open(Settings.HOME + "preferences_" + Settings.USERNAME, "w")
+        cPickle.dump([self.msg_check, self.avatar, self.popup], f)
         f.close()
      
 
