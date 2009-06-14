@@ -52,7 +52,7 @@ try:
     Settings.HOME = os.path.join(os.environ['HOME'], '.eventnotify') + os.sep
     Settings.HOME_MAIN = os.environ['HOME']
 except KeyError:    
-    Settings.HOME = os.path.join(os.environ['HOMEPATH'], 'eventnotify') + os.sep
+    Settings.HOME = os.path.join(os.environ['HOMEDRIVE'], os.environ['HOMEPATH'], 'eventnotify') + os.sep
     Settings.HOME_MAIN = os.environ['HOMEPATH']
 
 parser = optparse.OptionParser(version="%s %s by %s" % (Settings.NAME,
