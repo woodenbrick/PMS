@@ -64,6 +64,8 @@ class FacebookSession(db.Model):
     uid = db.StringProperty()
     session_key = db.StringProperty()
     expires = db.IntegerProperty()
+    offline_access = db.IntegerProperty()
+    publish_stream = db.IntegerProperty()
     
 #class Event(db.Model):
 #    name = db.StringProperty()

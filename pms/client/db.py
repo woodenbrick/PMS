@@ -63,7 +63,9 @@ class UserDB(DB):
                 `session_key` varchar(255),
                 `uid` int(20),
                 `expiry` int(20),
-                `last_time` int(20)
+                `last_time` int(20),
+                `offline_access` boolean,
+                `publish_stream` boolean
             )"""
         ]
         self.create_tables(tables)
@@ -143,7 +145,7 @@ class MessageDB(DB):
         """Returns a cursor containing the last 30 messages. If group is None
         then messages from all groups are returned"""
         if group is None:
-            self.cursor.execute("SELECT * FROM messages ORDER BY date DESC LIMIT 30")
+            self.cursor.execute("SELECT * FROM messages ORDER BY date LIMIT 30")
         else:
             self.cursor.execute("""SELECT * FROM messages WHERE _group=? ORDER BY date DESC LIMIT 30""",
                                 (group,))

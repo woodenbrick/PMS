@@ -255,7 +255,7 @@ class AddFacebookSessionKey(webapp.RequestHandler):
         else:
             facebook_session_key.uid = self.request.get("uid")
             facebook_session_key.session_key = self.request.get("facebook_session_key")
-            facebook_session_key.expires = self.request.get("expires")
+            facebook_session_key.expires = int(self.request.get("expires"))
         facebook_session_key.put()
         return server.response(self)
         

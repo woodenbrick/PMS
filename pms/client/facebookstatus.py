@@ -23,7 +23,8 @@ class FaceBookStatus(object):
 
     def new_session(self, update=False):
         auth_values = self.db.cursor.execute("""select session_key, uid, expiry,
-                                                          last_time from
+                                                          last_time, offline_access,
+                                                          publish_stream from
                                                         facebook where username=?""",
                                                         (Settings.USERNAME,)).fetchone()
         if auth_values is not None and update is False:
@@ -32,9 +33,16 @@ class FaceBookStatus(object):
             self.fb.uid = auth_values[1]
             self.fb.session_key_expires = auth_values[2]
             self.last_time = auth_values[3]
+            self.permission_offline_access = auth_values[4]
+            self.permission_publish_stream = auth_values[5]
             log.debug("sesskey: %s uid: %s expires: %s" % (self.fb.session_key, self.fb.uid,
                                                           self.fb.session_key_expires))
-        else:
+            if not self.permission_offline_access:
+                self.add_permission("offline_access")
+            if not self.permission_publish_stream:
+                self.add_permission("publish_stream")
+            return
+        elif update is False:
             #lets check the PMS server for a key
             response = self.parent.gae_conn.app_engine_request({"facebook" : "bleh"}, "/usr/facebook/retrievesessionkey")
             #responses OK NOFBKEY
@@ -42,9 +50,9 @@ class FaceBookStatus(object):
                 self.fb.session_key = self.parent.gae_conn.xtree.find("key").text
                 self.fb.uid = self.parent.gae_conn.xtree.find("uid").text
                 self.fb.session_key_expires = self.parent.gae_conn.xtree.find("expires").text
-                print self.fb.session_key, self.fb.uid
+                self.last_time = 0
                 self.add_to_db()
-                return
+        else:
             #otherwise, get it direct from facebook
             self.db.cursor.execute("""delete from facebook where username=?""",
                                                         (Settings.USERNAME,))
@@ -61,19 +69,23 @@ class FaceBookStatus(object):
             if resp == gtk.RESPONSE_OK:
                 auth_values = self.fb.auth.getSession()
                 log.debug(auth_values)
+                self.last_time = 0
                 self.add_to_db()
                 self.parent.gae_conn.app_engine_request(
                     {"uid" : self.fb.uid,
                      "facebook_session_key" : self.fb.session_key,
                      "expires" : self.fb.session_key_expires },
                     "/usr/facebook/addsessionkey")
+        self.add_permission("offline_access")
+        self.add_permission("publish_stream")
+        
                 
     def add_to_db(self):
                 self.db.cursor.execute("""insert into facebook (username, session_key,
                                                 uid, expiry, last_time) values (?, ?, ?, ?, ?)""",
                                                 (Settings.USERNAME,
                                                  self.fb.session_key, self.fb.uid,
-                                                 self.fb.session_key_expires, 0))
+                                                 self.fb.session_key_expires, self.last_time))
                 self.db.db.commit()
 
 
@@ -88,6 +100,14 @@ class FaceBookStatus(object):
             result = self.add_permission(ext_perm)
             return result
         if permission == 1:
+            query = """update facebook set %s=%s where username='%s'""" % (ext_perm, 1, Settings.USERNAME)
+            print query
+            self.db.cursor.execute(query)
+            self.db.db.commit()
+            if ext_perm == "offline_access":
+                self.permission_offline_access = 1
+            else:
+                self.permission_publish_stream = 1
             return True
         elif _recursive:
             return False

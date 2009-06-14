@@ -160,7 +160,7 @@ class PMS(object):
     def check_facebook_status(self):
         make_adj = True if self.wTree.get_widget("scrolledwindow").get_vadjustment().value == 0 else False
         messages = self.facebook_status.get_friends_status()
-        if messages == "Error":
+        if messages == False:
             log.info("Error checking facebook aborting")
             self.facebook_status.new_session(update=True)
             return True
