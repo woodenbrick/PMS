@@ -5,8 +5,8 @@ class Settings(object):
     VERSION = "0.10"
     AUTHOR = "Daniel Woodhouse"
     EMAIL = "wodemoneke@gmail.com"
-    WEBSITE = "http://github.com/woodenbrick/PMS"
-    WEBSITE_BUG = "http://bugreport.com"
+    WEBSITE = "https://launchpad.net/pms-client/"
+    WEBSITE_BUG = "https://launchpad.net/pms-client/+filebug"
     LICENCE = """
 pms is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

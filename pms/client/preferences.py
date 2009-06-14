@@ -38,7 +38,7 @@ class PreferencesWindow(object):
         self.wTree.signal_autoconnect(self)
         self.set_gui()
         self.new_avatar = False
-        self.thumb_path = os.path.join(Settings.IMAGES, "thumbnails", "_temp.thumbnail")
+        self.thumb_path = os.path.join(Settings.HOME, "thumbnails", "_temp.thumbnail")
 
         
     def set_gui(self):
@@ -109,7 +109,7 @@ class PreferencesWindow(object):
                 self.wTree.get_widget("preference_error").set_text(self.parent.gae_conn.error)
                 return
             if sys.platform == "linux2":
-                os.rename(self.thumb_path, self.preferences['avatar'])
+                os.rename(self.thumb_path, self.preferences.avatar)
             else:
                 #XXX
                 #windows magically changes the name of the file by divination
@@ -118,6 +118,7 @@ class PreferencesWindow(object):
                 #no solution yet
                 pass
             response = self.parent.gae_conn.send_avatar(self.preferences.avatar)
+            self.parent.avatars[Settings.USERNAME].update()
             self.parent.update_liststore_pixbufs(self.parent.avatars[Settings.USERNAME])
         self.parent.preferences.save_options()
         self.wTree.get_widget("window").destroy()
@@ -152,11 +153,18 @@ class Preferences(object):
 
 class Avatar(object):
     
-    def __init__(self, username, dir, facebook=False):
+    def __init__(self, parent, username, dir, facebook=False):
         self.username = username
+        self.parent = parent
         if facebook:
-            pic_square = facebook.split("/")[-1]
-            self.path = dir + pic_square
+            try:
+                pic_square = facebook.split("/")[-1]
+                self.path = dir + pic_square
+            except AttributeError:
+                #the facebook var doesnt have split
+                self.path = self.parent.user_db.cursor.execute("""select path from facebook_avatars
+                                                         where username=?""", (username,)).fetchone()[0]
+                
         else:
             self.path = dir + username + ".thumbnail"
         try:
@@ -165,6 +173,11 @@ class Avatar(object):
             if facebook:
                 urllib.urlretrieve(facebook, dir + pic_square)
                 self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
+                self.parent.user_db.cursor.execute("""delete from facebook_avatars where
+                                            username=?""", (username,))
+                self.parent.user_db.cursor.execute("""insert into facebook_avatars (username, path)
+                                            values (?, ?)""", (username, self.path))
+                self.parent.user_db.db.commit()
             else:
                 shutil.copy(dir + "avatar-default.png", self.path)
                 self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)

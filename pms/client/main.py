@@ -200,11 +200,9 @@ class PMS(object):
         for i in self.gae_conn.iter:
             if i.tag == "date":
                 message[i.tag] = float(i.text)
-                self.db.add_new(message)
                 if message['user'] == Settings.USERNAME:
                     local_user = True
                 messages.append(message)
-                self.db.add_new(message)
                 continue
             message[i.tag] = i.text
         self.render_messages(messages, "Check_Msg", local_user=local_user)
@@ -259,21 +257,22 @@ class PMS(object):
     
     def get_avatar(self, username, facebook=False):
         """Takes a username and returns a pixbuf of their avatar
-        or the default if none found"""
+        or the default if none found. facebook is the url of the users facebook image
+        or false if this is not a facebook user"""
         if facebook:
             try:
-                av = self.avatars[facebook].pixbuf
+                av = self.avatars["Facebook-" + username].pixbuf
                 return av
             except KeyError:
                 avatar_path = os.path.join(Settings.HOME, "thumbnails", "facebook") + os.sep
-                self.avatars[facebook] = preferences.Avatar(facebook, avatar_path, facebook)
-                return self.avatars[facebook].pixbuf
+                self.avatars["Facebook-" + username] = preferences.Avatar(self, username, avatar_path, facebook)
+                return self.avatars["Facebook-" + username].pixbuf
         try:
             av = self.avatars[username].pixbuf
             return av
         except KeyError:
             avatar_path = os.path.join(Settings.HOME, "thumbnails") + os.sep
-            self.avatars[username] = preferences.Avatar(username, avatar_path)
+            self.avatars[username] = preferences.Avatar(self, username, avatar_path)
             return self.avatars[username].pixbuf
 
     
@@ -319,7 +318,7 @@ class PMS(object):
             try:
                 av = self.avatars[user]
             except KeyError:
-                av = preferences.Avatar(user, os.path.join(Settings.HOME,
+                av = preferences.Avatar(self, user, os.path.join(Settings.HOME,
                                                               "thumbnails") + os.sep)
             great_success = self.gae_conn.app_engine_request(data=None, mapping="/usr/%s/avatar" % user,
                                                             get_avatar=av.path)
@@ -346,12 +345,15 @@ class PMS(object):
                                               facebook=message['pic_square']),
                               message['name'], "Facebook", message['status']['message'],
                               message['status']['time'])
+                self.db.add_new(data_tuple)
             elif type == "Check_Msg":
                 data_tuple = (self.get_avatar(message["user"]),
                               message['user'], message['group'], message['data'],
                               message['date'])
+                self.db.add_new(data_tuple)
             else:
-                data_tuple = (self.get_avatar(message[0]), message[0], message[1],
+                facebook = False if message[1] != "Facebook" else True
+                data_tuple = (self.get_avatar(message[0], facebook), message[0], message[1],
                               message[2], message[3])                                    
             self.messages_liststore.prepend([data_tuple[0], message_body %
                                              (data_tuple[1], data_tuple[2],

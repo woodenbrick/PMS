@@ -66,7 +66,12 @@ class UserDB(DB):
                 `last_time` int(20),
                 `offline_access` boolean,
                 `publish_stream` boolean
-            )"""
+            )""",
+            
+            """CREATE TABLE IF NOT EXISTS `facebook_avatars` (
+                `username` varchar(50),
+                `path` text
+            )""",
         ]
         self.create_tables(tables)
         
@@ -151,10 +156,10 @@ class MessageDB(DB):
                                 (group,))
         return self.cursor.fetchall()
     
-    
-    def add_new(self, record_dict):
+
+    def add_new(self, data):
         self.cursor.execute("""INSERT INTO messages (username, _group, message, date)
-                            VALUES (:user, :group, :data, :date)""", record_dict)
+                            VALUES (?, ?, ?, ?)""", (data[1], data[2], data[3], data[4]))
         self.db.commit()
         
     def last_date(self):
