@@ -21,6 +21,7 @@ import hashlib
 import gtk
 import gtk.glade
 import pygtk
+import pango
 import gobject
 from settings import Settings
 from misc import new_logger, nicetime
@@ -33,7 +34,7 @@ class GroupWindow():
         self.wTree.signal_autoconnect(self)
         self.wTree.get_widget("group_error").set_text("Loading groups")
         self.grouplist_file = Settings.HOME + "grouplist_" + Settings.USERNAME
-        self.columns = ["name", "owner", "description", "password", "membership", "", ""]
+        self.columns = ["Name", "Owner", "Description", "password", "membership", "Password?", "Member?"]
         self.wTree.get_widget("window").set_icon_from_file(Settings.LOGO1)
         self.group_list = self.check_for_old_grouplist()
         if not self.group_list:
@@ -155,10 +156,14 @@ class GroupWindow():
             if i == 3 or i == 4:
                 col.set_visible(False)
             col.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-            col.set_min_width(30)
-            col.set_max_width(250)
+            if i == 2:
+                #description
+                cell.props.wrap_mode = pango.WRAP_WORD_CHAR
+                cell.props.wrap_width = 300
+            #else:
+            #    col.set_min_width(30)
+            #    col.set_max_width(100)
             col.set_resizable(True)
-            col.set_spacing(10)
             self.wTree.get_widget("groupview").append_column(col)
     
     
@@ -250,6 +255,9 @@ class GroupWindow():
             
     
     def on_create_group_clicked(self, widget):
+        self.wTree.get_widget("group_name").set_text("")
+        self.wTree.get_widget("group_pass").set_text("")
+        self.wTree.get_widget("description").get_buffer().set_text("")
         response = self.wTree.get_widget("new_dialog").run()
         
     
@@ -263,9 +271,10 @@ class GroupWindow():
         self.wTree.get_widget("new_dialog").hide()
         if widget.name == "apply":
             self.wTree.get_widget("group_error").set_text("Creating new group...")
+            start, end = self.wTree.get_widget("description").get_buffer().get_bounds()
             values = {
                 "group" : self.wTree.get_widget("group_name").get_text(),
-                "description" : self.wTree.get_widget("description").get_text()
+                "description" : self.wTree.get_widget("description").get_buffer().get_text(start, end)
             }
             if self.wTree.get_widget("group_pass").get_text() != "":
                 values['password'] = hashlib.sha1(self.wTree.get_widget("group_pass").get_text()).hexdigest()

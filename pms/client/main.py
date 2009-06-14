@@ -213,8 +213,7 @@ class PMS(object):
         self.check_in_progress = False    
         return True
 
-    def close_pms(self, widget=None, logout=None):
-        print logout
+    def close_pms(self, widget=None):
         self.notifier.hide()
         self.main_window.hide()
         gobject.source_remove(self.check_timer)
@@ -224,7 +223,7 @@ class PMS(object):
             gobject.source_remove(self.facebook_timer)
         except AttributeError:
             pass
-        if logout:
+        if widget.name == "logout_main" or widget.name == "logout_right_click":
             self.wTree.get_widget("window").destroy()
             login.Login(new_user=True)
         else:
@@ -374,8 +373,6 @@ class PMS(object):
         col.pack_start(cell, False)
         col.set_attributes(cell, pixbuf=0)
         col.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-        col.set_min_width(64)
-        col.set_max_width(64)
         col.set_resizable(False)
         col.set_spacing(10)
         treeview.append_column(col)

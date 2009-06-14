@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Mon Jun  1 23:43:07 2009 -->
+<!--Generated with glade3 3.4.5 on Sun Jun 14 18:00:22 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="window">
-    <property name="width_request">500</property>
+    <property name="width_request">700</property>
     <property name="visible">True</property>
     <property name="title" translatable="yes">Groups</property>
     <property name="window_position">GTK_WIN_POS_CENTER</property>
@@ -28,6 +28,7 @@
                 <property name="height_request">400</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="rules_hint">True</property>
                 <signal name="cursor_changed" handler="change_join_button"/>
               </widget>
             </child>
@@ -135,6 +136,7 @@
                 </child>
               </widget>
               <packing>
+                <property name="expand">False</property>
                 <property name="position">2</property>
               </packing>
             </child>
@@ -148,6 +150,7 @@
   </widget>
   <widget class="GtkDialog" id="new_dialog">
     <property name="border_width">5</property>
+    <property name="title" translatable="yes">New Group</property>
     <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
     <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
     <property name="has_separator">False</property>
@@ -164,17 +167,21 @@
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">Enter group details:</property>
               </widget>
+              <packing>
+                <property name="position">1</property>
+              </packing>
             </child>
             <child>
               <widget class="GtkHBox" id="hbox4">
                 <property name="visible">True</property>
                 <child>
                   <widget class="GtkEntry" id="group_name">
-                    <property name="width_request">100</property>
+                    <property name="width_request">200</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                   </widget>
                   <packing>
+                    <property name="expand">False</property>
                     <property name="pack_type">GTK_PACK_END</property>
                     <property name="position">1</property>
                   </packing>
@@ -193,6 +200,7 @@
                 </child>
               </widget>
               <packing>
+                <property name="padding">5</property>
                 <property name="position">1</property>
               </packing>
             </child>
@@ -201,11 +209,12 @@
                 <property name="visible">True</property>
                 <child>
                   <widget class="GtkEntry" id="group_pass">
-                    <property name="width_request">100</property>
+                    <property name="width_request">200</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                   </widget>
                   <packing>
+                    <property name="expand">False</property>
                     <property name="pack_type">GTK_PACK_END</property>
                     <property name="position">1</property>
                   </packing>
@@ -213,7 +222,7 @@
                 <child>
                   <widget class="GtkLabel" id="label3">
                     <property name="visible">True</property>
-                    <property name="label" translatable="yes">Group password (optional):</property>
+                    <property name="label" translatable="yes">*Group password:</property>
                   </widget>
                   <packing>
                     <property name="expand">False</property>
@@ -224,6 +233,7 @@
                 </child>
               </widget>
               <packing>
+                <property name="padding">5</property>
                 <property name="position">2</property>
               </packing>
             </child>
@@ -231,12 +241,15 @@
               <widget class="GtkHBox" id="hbox6">
                 <property name="visible">True</property>
                 <child>
-                  <widget class="GtkEntry" id="description">
-                    <property name="height_request">50</property>
+                  <widget class="GtkTextView" id="description">
+                    <property name="width_request">200</property>
+                    <property name="height_request">100</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="wrap_mode">GTK_WRAP_WORD</property>
                   </widget>
                   <packing>
+                    <property name="expand">False</property>
                     <property name="pack_type">GTK_PACK_END</property>
                     <property name="position">1</property>
                   </packing>
@@ -244,8 +257,8 @@
                 <child>
                   <widget class="GtkLabel" id="label4">
                     <property name="visible">True</property>
-                    <property name="yalign">0.20999999344348907</property>
-                    <property name="label" translatable="yes">Description (optional):</property>
+                    <property name="yalign">0</property>
+                    <property name="label" translatable="yes">*Description:</property>
                   </widget>
                   <packing>
                     <property name="expand">False</property>
@@ -256,7 +269,18 @@
                 </child>
               </widget>
               <packing>
+                <property name="padding">5</property>
                 <property name="position">3</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="label6">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">* Optional</property>
+              </widget>
+              <packing>
+                <property name="padding">5</property>
+                <property name="position">4</property>
               </packing>
             </child>
           </widget>
@@ -304,6 +328,7 @@
   </widget>
   <widget class="GtkDialog" id="password">
     <property name="border_width">5</property>
+    <property name="title" translatable="yes">Authorisation required</property>
     <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
     <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
     <property name="has_separator">False</property>

@@ -54,6 +54,7 @@ class Login(object):
             has_key = self.gae_conn.check_for_session_key(self.username)
             if has_key and user_details[3] != 0:
                 #we should check if the server is available here
+                self.wTree.get_widget("auto_login").set_active(True)
                 self.show_main()
             else:
                 self.wTree.get_widget("username_entry").set_text(self.username)
@@ -159,6 +160,7 @@ class Login(object):
         self.wTree.get_widget("login_window").hide()
         self.wTree.get_widget("reg_username").set_text("")
         self.wTree.get_widget("reg_password").set_text("")
+        self.wTree.get_widget("reg_password_check").set_text("")
         self.wTree.get_widget("register_error").set_text("")
         self.wTree.get_widget("email").set_text("")
         self.wTree.get_widget("register_window").show()

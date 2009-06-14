@@ -70,7 +70,7 @@ if options.local_server:
     Settings.SERVER = "http://127.0.0.1:8080"
     Settings.HOME = Settings.HOME + "dev" + os.sep
 else:
-    Settings.SERVER = "http://zxvf.appspot.com"
+    Settings.SERVER = "http://wor-creator.appspot.com"
 
 if options.debug:
     Settings.LOGGING_LEVEL = logging.DEBUG

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Fri Jun 12 21:52:17 2009 -->
+<!--Generated with glade3 3.4.5 on Sun Jun 14 18:18:53 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -32,11 +32,11 @@
       </widget>
     </child>
     <child>
-      <widget class="GtkImageMenuItem" id="sep">
+      <widget class="GtkImageMenuItem" id="logout_right_click">
         <property name="visible">True</property>
         <property name="label" translatable="yes">Logout</property>
         <property name="use_underline">True</property>
-        <signal name="activate" handler="close_pms" object="logout"/>
+        <signal name="activate" handler="close_pms"/>
         <child internal-child="image">
           <widget class="GtkImage" id="menu-item-image1">
             <property name="visible">True</property>
@@ -106,11 +106,11 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="menuitem9">
+                      <widget class="GtkImageMenuItem" id="logout_main">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Logout</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="close_pms" object="logout=True"/>
+                        <signal name="activate" handler="close_pms"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="menu-item-image7">
                             <property name="visible">True</property>
