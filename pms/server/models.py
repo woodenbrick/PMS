@@ -58,7 +58,13 @@ class TempPassword(db.Model):
     temp_pass = db.StringProperty()
     activation_link = db.StringProperty()
     time = db.FloatProperty()
-
+    
+class FacebookSession(db.Model):
+    user = db.ReferenceProperty(User)
+    uid = db.StringProperty()
+    session_key = db.StringProperty()
+    expires = db.IntegerProperty()
+    
 #class Event(db.Model):
 #    name = db.StringProperty()
 #    group = db.ReferenceProperty(Group)

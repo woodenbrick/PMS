@@ -106,7 +106,7 @@ class GetSessionKey(webapp.RequestHandler):
     """
     def post(self):
         """
-        Return a new session key for the user. This is valid for 24 hours.
+        Return a new session key for the user. This is valid for 48 hours.
          :webapp.RequestHandler parameters:
           - name: Name of the user.
           - password: A sha1 hash of the users password
@@ -129,7 +129,7 @@ class GetSessionKey(webapp.RequestHandler):
         st = string.ascii_letters + string.digits
         while len(session_key) < 20:
             session_key.append(random.choice(st))
-        expires = int(time.time() + 30)
+        expires = int(time.time() + 172800)#48 hours
         session_key = "".join(session_key)
         try:
             sess = models.Session.get_by_key_name(name)
@@ -142,10 +142,7 @@ class GetSessionKey(webapp.RequestHandler):
                                expires=expires, ip=self.request.remote_addr)
         sess.put()
         memcache.set("session-" + name, sess)
-        temp_values = {"status" : "OK",
-                        "session_key" : session_key,
-                        "expires" : expires}
-        response(self, temp_values, template="session")
+        response(self, {"status" : "OK", "session" : sess}, template="session")
         
         
 class Error(webapp.RequestHandler):
@@ -178,6 +175,8 @@ application = webapp.WSGIApplication([
     ('/usr/avatarlist', users.AvatarList),
     ('/usr/changepass', users.ResetPasswordPart1),
     (r'/usr/(.+)/changepass/(.+)', users.ResetPasswordPart2),
+    ('/usr/facebook/retrievesessionkey', users.RetrieveFacebookSessionKey),
+    ('/usr/facebook/addsessionkey', users.AddFacebookSessionKey),
     
     ('/group/add', groups.Add),
     ('/group/join', groups.Join),

@@ -77,12 +77,9 @@ class PMS(object):
                                   "You are not a member of any group.  See group list?")
             response = popup.run()
             popup.destroy()
-            if response != gtk.RESPONSE_YES:
+            if response == gtk.RESPONSE_YES:
                 self.show_groups(None)
         else:
-            self.facebook_status = facebookstatus.FaceBookStatus(self)
-            self.facebook_timer = gobject.timeout_add(Settings.FACEBOOK_TIMEOUT,
-                                                      self.check_facebook_status)
             self.main_window.show()
         self.avatars = {}
         self.last_time = self.db.last_date()
@@ -93,8 +90,9 @@ class PMS(object):
                                                self.check_messages)
         self.avatar_timer = gobject.timeout_add(Settings.AVATAR_CHECK_TIMEOUT, self.retrieve_avatar_from_server)
         self.nicetime_timer = gobject.timeout_add(Settings.NICETIME_TIMOUT, self.update_nicetimes)
-        self.check_facebook_status()
-        
+        if self.facebook_status is not None:
+            self.check_facebook_status()
+            
 
     def update_nicetimes(self):
         for row in self.messages_liststore:
@@ -430,6 +428,8 @@ class PMS(object):
             self.user_groups.insert(0, group_name)
             if group_name == "Facebook":
                 self.facebook_status = facebookstatus.FaceBookStatus(self)
+                self.facebook_timer = gobject.timeout_add(Settings.FACEBOOK_TIMEOUT, self.check_facebook_status)
+                self.check_facebook_status()
         else:
             self.user_groups.remove(group_name)
             if group_name == "Facebook":
@@ -448,6 +448,7 @@ class PMS(object):
 
             self.set_groups()
         if len(self.user_groups) == 0:
+            self.facebook_status = None
             return False
         liststore = gtk.ListStore(str)
         self.group_box.set_model(liststore)

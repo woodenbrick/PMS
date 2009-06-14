@@ -227,3 +227,35 @@ class AvatarList(webapp.RequestHandler):
                 logging.info("upload time: %s last time: %s" % (avatar.upload_time, last_time))
         return server.response(self, values={"status" : "OK", "avatars" : new_avatars},
                                template="avatars")
+        
+class RetrieveFacebookSessionKey(webapp.RequestHandler):
+    """It's useful to store this here in case a user has PMS installed on multiple computers
+    it will check here first, if its not found, the client can then open the users browser"""
+    def post(self):
+        user, user_details = server.is_valid_key(self)
+        if not user:
+            return server.response(self, values={"status" : "BADAUTH"})
+        facebook_session_key = models.FacebookSession.get_by_key_name(user.name)
+        if not facebook_session_key:
+            return server.response(self, values={"status" : "NOFBKEY"})
+        return server.response(self, values={"status": "OK", "session" : facebook_session_key},
+                               template="session")
+
+class AddFacebookSessionKey(webapp.RequestHandler):
+    def post(self):
+        user, user_details = server.is_valid_key(self)
+        if not user:
+            return server.response(self, values={"status": "BADAUTH"})
+        facebook_session_key = models.FacebookSession.get_by_key_name(user.name)
+        if not facebook_session_key:
+            facebook_session_key = models.FacebookSession(key_name=user.name,
+                                                          user=user, uid=self.request.get("uid"),
+                                                          session_key=self.request.get("facebook_session_key"),
+                                                          expires=int(self.request.get("expires")))
+        else:
+            facebook_session_key.uid = self.request.get("uid")
+            facebook_session_key.session_key = self.request.get("facebook_session_key")
+            facebook_session_key.expires = self.request.get("expires")
+        facebook_session_key.put()
+        return server.response(self)
+        

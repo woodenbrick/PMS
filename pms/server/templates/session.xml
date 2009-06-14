@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <pms status="{{ status }}">
-    <key>{{session_key}}</key>
-    <expires>{{expires}}</expires>
+    {% if session.uid %}
+    <uid>{{session.uid}}</uid>
+    {% endif %}
+    <key>{{session.session_key}}</key>
+    <expires>{{session.expires}}</expires>
 </pms>

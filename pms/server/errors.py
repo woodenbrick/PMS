@@ -30,6 +30,7 @@ errors = {
     "OUTDATED" : "The link you have followed is outdated",
     "BADUSERNAME" : "User name must be alpha-numeric and between 5 and 18 characters",
     "BADEMAIL" : "Invalid email address",
+    "NOFBKEY" : "There is no Facebook session key stored for this user",
     "ERROR" : "", #general error, has its own message
 }
     

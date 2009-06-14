@@ -15,7 +15,7 @@ class FaceBookStatus(object):
         self.db = self.parent.user_db
         self.queue = Queue.Queue()
         self.api_key = "26d3226223a91268db2a4915cd7e0b69"
-        self.secret_key = open(Settings.HOME + "facebook_secret", "r").readline().strip()
+        self.secret_key = "d5077b8ef8ca5b1e948ec16ed3fc7e0c"
         self.fb = facebook.Facebook(self.api_key, self.secret_key)
         self.new_session()
         #self.add_permission("offline_access")
@@ -26,7 +26,6 @@ class FaceBookStatus(object):
                                                           last_time from
                                                         facebook where username=?""",
                                                         (Settings.USERNAME,)).fetchone()
-        log.info(auth_values)
         if auth_values is not None and update is False:
             log.debug("Authorised user")
             self.fb.session_key = auth_values[0]
@@ -36,23 +35,46 @@ class FaceBookStatus(object):
             log.debug("sesskey: %s uid: %s expires: %s" % (self.fb.session_key, self.fb.uid,
                                                           self.fb.session_key_expires))
         else:
+            #lets check the PMS server for a key
+            response = self.parent.gae_conn.app_engine_request({"facebook" : "bleh"}, "/usr/facebook/retrievesessionkey")
+            #responses OK NOFBKEY
+            if response == "OK":
+                self.fb.session_key = self.parent.gae_conn.xtree.find("key").text
+                self.fb.uid = self.parent.gae_conn.xtree.find("uid").text
+                self.fb.session_key_expires = self.parent.gae_conn.xtree.find("expires").text
+                print self.fb.session_key, self.fb.uid
+                self.add_to_db()
+                return
+            #otherwise, get it direct from facebook
             self.db.cursor.execute("""delete from facebook where username=?""",
-                                                        (self.parent.login.username,))
+                                                        (Settings.USERNAME,))
             self.db.db.commit()
             log.debug("No auth or expired session key")
             self.fb.auth.createToken()
             self.fb.login()
             self.last_time = 0
-            #XXX needs to be guified
-            raw_input("Allow the app access in your browser then press any key to continue")
-            auth_values = self.fb.auth.getSession()
-            log.debug(auth_values)
-            self.db.cursor.execute("""insert into facebook (username, session_key,
+            message = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO,
+                                        gtk.BUTTONS_NONE, "PMS needs authorisation from Facebook in order to access your friends status's. After you are done, click OK.")
+            message.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
+            resp = message.run()
+            message.destroy()
+            if resp == gtk.RESPONSE_OK:
+                auth_values = self.fb.auth.getSession()
+                log.debug(auth_values)
+                self.add_to_db()
+                self.parent.gae_conn.app_engine_request(
+                    {"uid" : self.fb.uid,
+                     "facebook_session_key" : self.fb.session_key,
+                     "expires" : self.fb.session_key_expires },
+                    "/usr/facebook/addsessionkey")
+                
+    def add_to_db(self):
+                self.db.cursor.execute("""insert into facebook (username, session_key,
                                                 uid, expiry, last_time) values (?, ?, ?, ?, ?)""",
-                                                (self.parent.login.username,
-                                                 auth_values['session_key'], auth_values['uid'],
+                                                (Settings.USERNAME,
+                                                 self.fb.session_key, self.fb.uid,
                                                  self.fb.session_key_expires, 0))
-            self.db.db.commit()
+                self.db.db.commit()
 
 
 
@@ -72,7 +94,11 @@ class FaceBookStatus(object):
         #request permission
         url = "http://www.facebook.com/authorize.php?api_key=%s&v=1.0&ext_perm=%s" % (self.api_key, ext_perm)
         webbrowser.open_new_tab(url)
-        raw_input("You must grant xompzz additional permissions to edit your status stream. Press enter when done")
+        message = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO,
+                                    gtk.BUTTONS_NONE, "PMS needs permission %s from Facebook. After you are done, click OK." % ext_perm)
+        message.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
+        resp = message.run()
+        message.destroy()
         #check again, see if it is granted
         self.add_permission(ext_perm, True)
     
