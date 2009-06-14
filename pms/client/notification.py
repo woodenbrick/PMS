@@ -59,13 +59,16 @@ class LinuxNotifier(NotificationSystem):
         self.tray_icon.connect("popup-menu", self.main_program.popup_menu, None)
         
     def popup(self, header, formatted_msg, avatar):
-        n = pynotify.Notification(header, formatted_msg)
-        #timeout seems to cause breakage?
-        #n.set_timeout(self.timeout)
-        n.set_icon_from_pixbuf(avatar)
-        n.add_action("open_program", "Open", self.open_program_cb)
-        n.attach_to_status_icon(self.tray_icon)
-        n.show()
+        if sys.platform == "linux2":
+            n = pynotify.Notification(header, formatted_msg)
+            #timeout seems to cause breakage?
+            #n.set_timeout(self.timeout)
+            n.set_icon_from_pixbuf(avatar)
+            n.add_action("open_program", "Open", self.open_program_cb)
+            n.attach_to_status_icon(self.tray_icon)
+            n.show()
+        else:
+            print 'Currently windows notifications are not supported'
         
     def hide(self):
         self.tray_icon.set_visible(False)

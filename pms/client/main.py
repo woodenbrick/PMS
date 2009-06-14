@@ -56,11 +56,9 @@ class PMS(object):
         self.main_window = self.wTree.get_widget("window")
         self.main_window.set_icon_from_file(Settings.LOGO1)
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
-        
-        if sys.platform == "win32":
-            self.notifier = notification.WindowsNotifier(self)
-        else:
-            self.notifier = notification.LinuxNotifier(self)
+        #XXX we are using the linux notifier for now
+        #and disabling notify for windows putas
+        self.notifier = notification.LinuxNotifier(self)
 
         #add non stock icons to menus
         images = ["refresh", "bug", "groups"]
