@@ -90,6 +90,7 @@ class PMS(object):
         self.nicetime_timer = gobject.timeout_add(Settings.NICETIME_TIMOUT, self.update_nicetimes)
         if self.facebook_status is not None:
             self.check_facebook_status()
+        self.retrieve_avatar_from_server()
             
 
     def update_nicetimes(self):
@@ -130,7 +131,7 @@ class PMS(object):
         self.wTree.get_widget("send_message").set_sensitive(False)
         
         if self.group_box.get_active_text() == "Facebook":
-            if not self.facebook_status.has_publish_permission:
+            if not self.facebook_status.permission_publish_stream:
                 dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL,
                                            gtk.MESSAGE_INFO, gtk.BUTTONS_NONE,
                                            """PMS requires extra permissions from Facebook before it can update your status.  After you have granted permission, click OK""")

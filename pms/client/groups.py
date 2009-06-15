@@ -37,14 +37,11 @@ class GroupWindow():
         self.columns = ["Name", "Owner", "Description", "password", "membership", "Password?", "Member?"]
         self.wTree.get_widget("window").set_icon_from_file(Settings.LOGO1)
         self.group_list = self.check_for_old_grouplist()
+        self.group_liststore = gtk.ListStore(str, str, str, bool, bool, gtk.gdk.Pixbuf, gtk.gdk.Pixbuf)
         if not self.group_list:
             self.group_list = self.new_grouplist()
-        self.group_liststore = gtk.ListStore(str, str, str, bool, bool, gtk.gdk.Pixbuf, gtk.gdk.Pixbuf)
         if self.group_list is not None:
-            for item in self.group_list:
-                img_pass = self.create_pixbuf(value=item[3], member=False)
-                img_member = self.create_pixbuf(value=item[4])
-                self.group_liststore.append(item + [img_pass, img_member])
+            self.refresh_grouplist(None)
         self.wTree.get_widget("groupview").set_model(self.group_liststore)
         self.create_columns()
         self.wTree.get_widget("group_error").set_text("")
@@ -91,30 +88,23 @@ class GroupWindow():
             self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
             return
         self.wTree.get_widget("group_error").set_text("Downloading new group list...Done")
+        
         user_groups_tree = self.parent.gae_conn.xtree
         user_groups = []
         for i in user_groups_tree.getiterator():
             if i.tag == "name":
-                user_groups.append(i.text.strip())
-        iter = all_groups_tree.getiterator()
-        
-        self.group_list = []
-        group = []
+                user_groups.append(i.text)
 
-        for child in iter:
-            if child.tag in self.columns:
-                if child.tag == "password":
-                    pass_req = True if child.attrib["required"] == "True" else False
-                    group.append(pass_req)
-                    #we need to check if the user is a member of this group
-                    if group[0] in user_groups:
-                        group.append(True)
-                    else:
-                        group.append(False)
-                    self.group_list.append(group)
-                    group = []
-                else:
-                    group.append(child.text)
+        groups = all_groups_tree.findall("group")
+        self.group_list = []
+        for group in groups:
+            self.group_list.append([
+                group.find("name").text,
+                group.find("owner").text,
+                group.find("description").text,
+                True if group.find("password").attrib["required"] == "True" else False,
+                True if group.find("name").text in user_groups else False
+            ])
         #cache the groupliststore for later use
         f = open(self.grouplist_file, "w")
         cPickle.dump(self.group_list, f)
@@ -123,12 +113,12 @@ class GroupWindow():
         return self.group_list
     
     def refresh_grouplist(self, widget):
-        old_list = self.group_list
-        self.new_grouplist()
+        self.group_liststore.clear()
+        if widget is not None:
+            self.new_grouplist()
         for item in self.group_list:
-            if item not in old_list:
-                img_pass = self.create_pixbuf(item[3], False)
-                img_member = self.create_pixbuf(item[4])
+                img_pass = self.create_pixbuf(value=item[3], member=False)
+                img_member = self.create_pixbuf(value=item[4])
                 self.group_liststore.append(item + [img_pass, img_member])
         self.update_refresh_button()
                 
@@ -327,6 +317,8 @@ class GroupWindow():
 
     def auto_message(self, action, group):
         """adds a message of type [left, joined, created] groups"""
+        if group == "Facebook":
+            return
         data = {'message' : "%s has %s the group %s" % (Settings.USERNAME,
                                           action, group),
                 'group' : group}
