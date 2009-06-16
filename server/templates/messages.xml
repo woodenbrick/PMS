@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pms status="{{ status }}">{% for message in messages %} 
+<message>
+    <group>{{message.group.name}}</group>
+    <user>{{message.user.name}}</user>
+    <data>{{message.comment}}</data>
+    <date>{{message.date}}</date>
+</message>{% endfor %}</pms>
