@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<pms status="{{ status }}">{% for group in groups %} 
-<group>
-    <name>{{group.name}}</name>
-    <owner>{{group.owner.name}}</owner>
-    <description>{{group.description}}</description>
-    <password required="{{group.password_required}}" />
-</group>{% endfor %}</pms>
