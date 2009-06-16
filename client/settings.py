@@ -25,12 +25,12 @@ along with pms.  If not, see http://www.gnu.org/licenses/
     AVATAR_CHECK_TIMEOUT = 900000
     NICETIME_TIMOUT = 60000
     #these will be set at runtime
-    HOME = "/home/wode/.eventnotify"
+    HOME = ""
     HOMEMAIN = ""
     IMAGES = ""
     GLADE = ""
     LOGGING_LEVEL = None
     LOGO1 = ""
     LOGO2 = ""
-    SERVER = "http://127.0.0.1:8080" #"http://wor-creator.appspot.com"
+    SERVER = "" 
     USERNAME = ""

@@ -36,15 +36,16 @@ else:
     #linux, check if running from src or executable 
     src_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
     if not os.path.exists(os.path.join(src_dir, "client")):
-        src_dir = os.path.join("usr", "share", "pms")
+        src_dir = "/usr/share/pms"
     else:
         sys.path.insert(0, src_dir)
+        src_dir = os.path.join(src_dir, "client") 
 
 from client.settings import Settings
 from client import login
 
-Settings.IMAGES = os.path.join(src_dir, "client", "images") + os.sep
-Settings.GLADE = os.path.join(src_dir, "client", "glade") + os.sep
+Settings.IMAGES = os.path.join(src_dir, "images") + os.sep
+Settings.GLADE = os.path.join(src_dir, "glade") + os.sep
 Settings.LOGO1 = Settings.IMAGES + "event-notify-blue.ico"
 Settings.LOGO2 = Settings.IMAGES + "event-notify-yellow.ico"
 
