@@ -232,5 +232,7 @@ class ThreadedFBConnection(threading.Thread):
             self.queue.put(response)
         except facebook.FacebookError, e:
             self.queue.put(False)
+        except urllib2.URLError:
+            self.queue.put(False)
             log.debug(e)
         
