@@ -4,6 +4,7 @@ import unittest
 import time
 from client.misc import nicetime
 from client import libpms
+from client import ircclient
 class NiceTimeCorrectTime(unittest.TestCase):
     #known times
     def setUp(self):
@@ -24,18 +25,20 @@ class NiceTimeCorrectTime(unittest.TestCase):
             self.assertEqual(ntime, nicetime(gtime))
             
 
-class AppEngineTest(unittest.TestCase):
-    
+
+class IRCNickTest(unittest.TestCase):
     def setUp(self):
-        self.conn = libpms.AppEngineConnection()
-        self.conn.default_values['name'] = "Daniel"
-        self.conn.check_for_session_key("Daniel")
-        self.conn.password = hashlib.sha1("FReNZaL18").hexdigest()
-    
-    def test_msg_check(self):
-        response = self.conn._app_engine_request({"time" : "1245147679"}, "/msg/check")
-        self.assertEqual(response, "OK")
+        self.known_nicks = (
+            ("Daniel", "pms_Daniel!n=pms_Dani@79-100-88-231.btc-net.bg"),
+            ("hamish", "pms_hamish!n=pms_Dani@79-100-88-231.btc-net.bg"),
+            ("some_one", "pms_some_one!n=pms_Dani@79-100-88-231.btc-net.bg"),
+            ("Dangus", "pms_Dangus")
+        )
         
+    def test_irc_to_pms(self):
+        for pms, irc in self.known_nicks:
+            self.assertEqual(ircclient.convert_irc_name_to_pms(irc), pms)
+
 if __name__ == "__main__":
     #testcase = NiceTimeCorrectTime()
     unittest.main()

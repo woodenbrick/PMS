@@ -40,7 +40,7 @@ import facebookstatus
 from settings import Settings
 from misc import new_logger
 log = new_logger("main.py", Settings.LOGGING_LEVEL)
-
+import ircclient
 
 
 class PMS(object):
@@ -79,6 +79,18 @@ class PMS(object):
                 self.show_groups(None)
         else:
             self.main_window.show()
+        
+        #add chatrooms to menu
+        chat_menu = gtk.Menu()
+        for group in self.user_groups:
+            if group == "Facebook":
+                continue
+            item = gtk.MenuItem(group)
+            item.connect("activate", self.chat_room_opened, group)
+            item.show()
+            chat_menu.append(item)
+        self.wTree.get_widget("chat_menu").set_submenu(chat_menu)
+        
         self.avatars = {}
         self.last_time = self.db.last_date()
         self.fill_messages()
@@ -91,8 +103,17 @@ class PMS(object):
         if self.facebook_status is not None:
             self.check_facebook_status()
         self.retrieve_avatar_from_server()
-            
+        
 
+    def chat_room_opened(self, widget, group):
+        group_irc = "#pms_" + group.replace(" ", "_")
+        if not hasattr(self, "connection"):
+            log.debug("IRC Connection doesnt exist, creating")
+            self.connection = ircclient.IRCGlobal("pms_" + Settings.USERNAME)
+        else:
+            log.debug("IRC Connection found")
+        ircclient.IRCRoom(self.connection, group_irc)
+    
     def update_nicetimes(self):
         for row in self.messages_liststore:
             st = row[1].split("<i>")
