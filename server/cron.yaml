@@ -1,0 +1,4 @@
+cron:
+- description: remove old users
+  url: /usr/log/clean
+  schedule: every 1 minute

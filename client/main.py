@@ -81,20 +81,26 @@ class PMS(object):
             self.main_window.show()
         
         #add chatrooms to menu
-        chat_menu = gtk.Menu()
+        self.chat_menu = gtk.Menu()
         for group in self.user_groups:
             if group == "Facebook":
                 continue
             item = gtk.MenuItem(group)
+            item.set_name("menu_item_" + group)
             item.connect("activate", self.chat_room_opened, group)
             item.show()
-            chat_menu.append(item)
-        self.wTree.get_widget("chat_menu").set_submenu(chat_menu)
+            self.chat_menu.append(item)
+        self.wTree.get_widget("chat_menu").set_submenu(self.chat_menu)
         
         self.avatars = {}
         self.last_time = self.db.last_date()
         self.fill_messages()
         self.check_in_progress = False
+        self.go_online()
+        #XXXfor some reason, if the requests for msg check and login are made at the same time
+        #we lose the login list
+        #it may have something to do with the threads in libpms
+        self.login_timer = gobject.timeout_add(10000, self.go_online)
         self.check_messages()
         self.check_timer = gobject.timeout_add(self.preferences.msg_check * 1000,
                                                self.check_messages)
@@ -103,7 +109,27 @@ class PMS(object):
         if self.facebook_status is not None:
             self.check_facebook_status()
         self.retrieve_avatar_from_server()
-        
+    
+    def go_online(self):
+        """Sets a user to online status and retrieves the current userlist"""
+        response = self.gae_conn.app_engine_request({}, "/usr/log/in")
+        if response == "OK":
+            log.debug("Online check OK")
+            for item in self.gae_conn.iter:
+                print item.tag, item.text
+            user_list = self.gae_conn.xtree.findall("user")
+            #XXX check if our user is interested in these users
+            clean_list = []
+            for user in user_list:
+                clean_list.append(user.text)
+            self.wTree.get_widget("online_users").set_text("%s users online: " % len(clean_list) + ",".join(clean_list))
+        else:
+            print self.gae_conn.error
+        return True
+    
+    def go_offline(self):
+        """Sets a user to offline status"""
+        self.gae_conn.app_engine_request({}, "/usr/log/out")
 
     def chat_room_opened(self, widget, group):
         group_irc = "#pms_" + group.replace(" ", "_")
@@ -239,6 +265,8 @@ class PMS(object):
     def close_pms(self, widget=None):
         self.notifier.hide()
         self.main_window.hide()
+        gobject.source_remove(self.login_timer)
+        self.go_offline()
         gobject.source_remove(self.check_timer)
         gobject.source_remove(self.avatar_timer)
         gobject.source_remove(self.nicetime_timer)
@@ -368,19 +396,23 @@ class PMS(object):
                               message['name'], "Facebook", escape(message['status']['message']),
                               message['status']['time'])
                 self.db.add_new(data_tuple)
+                func = self.messages_liststore.prepend
             elif type == "Check_Msg":
                 data_tuple = (self.get_avatar(message["user"]),
                               message['user'], escape(message['group']), escape(message['data']),
                               message['date'])
                 self.db.add_new(data_tuple)
+                func = self.messages_liststore.prepend
             else:
                 facebook = False if message[1] != "Facebook" else True
                 data_tuple = (self.get_avatar(message[0], facebook), message[0], message[1],
-                              message[2], message[3])                                    
-            self.messages_liststore.prepend([data_tuple[0], message_body %
+                              message[2], message[3])
+                func = self.messages_liststore.append
+            func([data_tuple[0], message_body %
                                              (data_tuple[1], data_tuple[2],
                                               data_tuple[3], misc.nicetime(data_tuple[4])),
                                              data_tuple[1], data_tuple[4]])
+
         #if the user wants popups
         if self.preferences.popup and type != "DB" and local_user is False:
             self.notifier.new_message(data_tuple, len(messages),
@@ -454,8 +486,16 @@ class PMS(object):
                 self.facebook_status = facebookstatus.FaceBookStatus(self)
                 self.facebook_timer = gobject.timeout_add(Settings.FACEBOOK_TIMEOUT, self.check_facebook_status)
                 self.check_facebook_status()
+            else:
+                item = gtk.MenuItem(group_name)
+                item.set_name("menu_item_" + group_name)
+                item.connect("activate", self.chat_room_opened, group_name)
+                item.show()
+                self.chat_menu.append(item)
         else:
             self.user_groups.remove(group_name)
+            #XXX need to remove item from chat menu
+            #self.wTree.get_widget("menu_item_" + group_name).destroy()
             if group_name == "Facebook":
                 self.facebook_status = None
                 gobject.source_remove(self.facebook_timer)

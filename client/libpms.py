@@ -69,6 +69,7 @@ class AppEngineConnection(object):
         self.default_values = {}
         self.error = ""
         self.queue = Queue.Queue()
+        self.undone_queue = Queue.Queue()
         self.session_key_request_in_progress = False
         
     def check_xml_response(self, doc):
@@ -107,6 +108,7 @@ class AppEngineConnection(object):
           - auto_now: True if the current time should be included in the request
           - get_avatar: True if the request is to download an image
         """
+        
         request = ThreadedAppEngineRequest(self, data, mapping, auto_now,
                                            get_avatar, self.queue)
         request.daemon = True

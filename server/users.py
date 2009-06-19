@@ -151,6 +151,55 @@ class ResetPasswordPart2(webapp.RequestHandler):
         temp.delete()
         server.response(self, template="password_change", content="html")
         
+class LoginClean(webapp.RequestHandler):
+    """Mapping: /usr/log/clean"""
+    def get(self):
+        """cleans the userlist of users who havent sent a /usr/log/in request for more
+        than 10 minutes.  this will be called by cron"""
+        old_time = time.time() - 20
+        logged_in = memcache.get("logged_in")
+        if logged_in is not None:
+            for user, last_time in logged_in.items():
+                if last_time < old_time:
+                    del(logged_in[user])
+            memcache.set("logged_in", logged_in)
+ 
+class LogIn(webapp.RequestHandler):
+    """Mapping: /usr/log/in"""
+    def post(self):
+        """Logs the user in so other can see they are online. This should be called
+        at least every 10 minutes otherwise the users status will be set to offline
+        Returns the current ONLINE list"""
+        user, user_data = server.is_valid_key(self)
+        if not user:
+            return server.response(self, values={"status" : "BADAUTH"})
+        logged_in = memcache.get("logged_in")
+        if logged_in is None:
+            logged_in = {}
+        logged_in[user.name] = time.time()
+        memcache.set("logged_in", logged_in)
+        server.response(self, values={'status' : 'OK', "users" : logged_in}, template="loginlist")
+    
+    def get(self):
+        """just returns the current online userlist"""
+        logged_in = memcache.get("logged_in")
+        if logged_in is None:
+            logged_in = {}
+        server.response(self, values={'status' : 'OK', "users" : logged_in}, template="loginlist")
+    
+        
+class LogOut(webapp.RequestHandler):
+    """Mapping: /usr/log/out"""
+    def post(self):
+        user, user_data = server.is_valid_key(self)
+        if not user:
+            return server.response(self, values={"status" : "BADAUTH"})
+        logged_in = memcache.get("logged_in")
+        del(logged_in[user.name])
+        memcache.set("logged_in", logged_in)
+        server.response(self)
+
+
 class ChangeAvatar(webapp.RequestHandler):
     """Mapping: /usr/changeavatar"""
     def post(self):

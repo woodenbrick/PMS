@@ -150,9 +150,9 @@ class MessageDB(DB):
         """Returns a cursor containing the last 30 messages. If group is None
         then messages from all groups are returned"""
         if group is None:
-            self.cursor.execute("SELECT * FROM messages ORDER BY date LIMIT 30")
+            self.cursor.execute("SELECT distinct * FROM messages ORDER BY date DESC LIMIT 30")
         else:
-            self.cursor.execute("""SELECT * FROM messages WHERE _group=? ORDER BY date DESC LIMIT 30""",
+            self.cursor.execute("""SELECT distinct * FROM messages WHERE _group=? ORDER BY date DESC LIMIT 30""",
                                 (group,))
         return self.cursor.fetchall()
     
