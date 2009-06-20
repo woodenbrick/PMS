@@ -58,7 +58,7 @@ class PMS(object):
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
         #XXX we are using the linux notifier for now
         #and disabling notify for windows putas
-        self.notifier = notification.LinuxNotifier(self)
+        self.notifier = notification.WindowsNotifier(self)
 
         #add non stock icons to menus
         images = ["refresh", "bug", "groups"]
@@ -91,7 +91,6 @@ class PMS(object):
             item.show()
             self.chat_menu.append(item)
         self.wTree.get_widget("chat_menu").set_submenu(self.chat_menu)
-        
         self.avatars = {}
         self.last_time = self.db.last_date()
         self.fill_messages()
@@ -100,7 +99,10 @@ class PMS(object):
         #XXXfor some reason, if the requests for msg check and login are made at the same time
         #we lose the login list
         #it may have something to do with the threads in libpms
-        self.login_timer = gobject.timeout_add(10000, self.go_online)
+        #we will block requests from /msg/check or /usr/log/in until the request is done
+        self.block = False
+        self.login_timer = gobject.timeout_add(60000, self.go_online)
+        self.check_login_timer = gobject.timeout_add(5000, self.check_online)
         self.check_messages()
         self.check_timer = gobject.timeout_add(self.preferences.msg_check * 1000,
                                                self.check_messages)
@@ -112,20 +114,40 @@ class PMS(object):
     
     def go_online(self):
         """Sets a user to online status and retrieves the current userlist"""
-        response = self.gae_conn.app_engine_request({}, "/usr/log/in")
+        response, tree = self.gae_conn.app_engine_request({}, "/usr/log/in")
         if response == "OK":
-            log.debug("Online check OK")
-            for item in self.gae_conn.iter:
-                print item.tag, item.text
-            user_list = self.gae_conn.xtree.findall("user")
-            #XXX check if our user is interested in these users
-            clean_list = []
-            for user in user_list:
-                clean_list.append(user.text)
-            self.wTree.get_widget("online_users").set_text("%s users online: " % len(clean_list) + ",".join(clean_list))
+            self.set_online(tree)
         else:
             print self.gae_conn.error
         return True
+    
+    def check_online(self):
+        """get all logged in users"""
+        if self.check_in_progress:
+            log.debug("/msg/check in progress cancelling online check")
+            return True
+        response, tree = self.gae_conn.app_engine_request(None, "/usr/log/in")
+        if response == "OK":
+            self.set_online(tree)
+        else:
+            self.wTree.get_widget("main_error").set_text(self.gae_conn.error)
+        return True
+        
+    def set_online(self, tree):
+        """Update the list of online users, notify the current user of any online/offline
+        shenanigans"""
+        user_list = [user.text for user in tree.findall("user")]
+        #XXX check if our user is actually interested in these users
+        if not hasattr(self, "online_users"):
+            self.online_users = []
+        came_online = [user for user in user_list if user not in self.online_users]
+        went_offline = [user for user in self.online_users if user not in user_list]
+        self.online_users.extend(came_online)
+        self.notifier.change_users_online_status(came_online, went_offline)
+        markup = "<span foreground='red'><b>%s users online: </b>" % len(
+            self.online_users) + ", ".join(self.online_users) + "</span>"
+        self.wTree.get_widget("online_users").set_markup(markup)
+
     
     def go_offline(self):
         """Sets a user to offline status"""
@@ -193,7 +215,7 @@ class PMS(object):
             self.update_status_bar("Sending message...")
             data = {'message' : message,
             'group' : self.group_box.get_active_text()}
-            response = self.gae_conn.app_engine_request(data, "/msg/add")
+            response, tree = self.gae_conn.app_engine_request(data, "/msg/add")
             if response == "OK":
                 buffer.set_text("")
                 buffer.place_cursor(buffer.get_iter_at_offset(0))
@@ -231,7 +253,7 @@ class PMS(object):
             log.info("Check in progress, cancelling")
             return True
         self.check_in_progress = True
-        response = self.gae_conn.app_engine_request({"time" : self.last_time}, "/msg/check")
+        response, tree = self.gae_conn.app_engine_request({"time" : self.last_time}, "/msg/check")
         if response == "OK":
             self.update_status_bar("Last update: " + time.strftime("%I:%M:%S %p",
                                                     time.localtime(time.time())), time=True)
@@ -244,7 +266,7 @@ class PMS(object):
         messages = []
         message = {}
         local_user = False
-        for i in self.gae_conn.iter:
+        for i in tree.getiterator():
             if i.tag == "date":
                 message[i.tag] = float(i.text)
                 if message['user'] == Settings.USERNAME:
@@ -259,7 +281,7 @@ class PMS(object):
             vadj.value = -1
         while gtk.events_pending():
             gtk.main_iteration(False)
-        self.check_in_progress = False    
+        self.check_in_progress = False
         return True
 
     def close_pms(self, widget=None):
@@ -267,6 +289,7 @@ class PMS(object):
         self.main_window.hide()
         gobject.source_remove(self.login_timer)
         self.go_offline()
+        gobject.source_remove(self.check_login_timer)
         gobject.source_remove(self.check_timer)
         gobject.source_remove(self.avatar_timer)
         gobject.source_remove(self.nicetime_timer)
@@ -345,7 +368,7 @@ class PMS(object):
         if len(users) == 0:
             #user doesnt have any visible messages so,
             return True
-        response = self.gae_conn.app_engine_request(data={"time" : last_download,
+        response, tree = self.gae_conn.app_engine_request(data={"time" : last_download,
                                                         "userlist" : users},
                                                     mapping="/usr/avatarlist")
         if response != "OK":
@@ -355,7 +378,7 @@ class PMS(object):
         #we have a list of users who uploaded their avatar after our specified time
         newest = None
         download_users = []
-        for i in self.gae_conn.iter:
+        for i in tree.getiterator():
             if i.tag == "user" and i.text.strip() != "":
                 download_users.append(i.text)
             if i.tag == "uploaded" and i.text > newest:
@@ -472,7 +495,7 @@ class PMS(object):
                 return self.user_groups
             except IOError:
                 pass
-        response = self.gae_conn._app_engine_request(None, "/usr/groups/%s" % Settings.USERNAME)
+        response, tree = self.gae_conn._app_engine_request(None, "/usr/groups/%s" % Settings.USERNAME)
         self.user_groups = self.gae_conn.get_tags("name")
         f = open(Settings.HOME + "%s_user_groups" % Settings.USERNAME, "w")
         cPickle.dump(self.user_groups, f)

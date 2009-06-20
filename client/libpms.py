@@ -28,6 +28,8 @@ import gtk
 import cPickle
 import threading
 import Queue
+import socket
+socket.setdefaulttimeout(10)
 
 from xml.etree import ElementTree as ET
 from settings import Settings
@@ -53,13 +55,12 @@ class ThreadedAppEngineRequest(threading.Thread):
 
         
     def run(self):
-        while self.gae_conn_obj.session_key_request_in_progress:
-            log.debug("Sleeping %s for 2 seconds due to session key request" % self.mapping)
-            time.sleep(3)
+        while self.gae_conn_obj.important_request_in_progress:
+            log.debug("Sleeping %s for 2 seconds due to important request" % self.mapping)
+            time.sleep(2)
         response = self.gae_conn_obj._app_engine_request(self.data, self.mapping,
                                                          self.auto_now, self.get_avatar)
         self.queue.put(response)
-
 
 
 class AppEngineConnection(object):
@@ -70,28 +71,29 @@ class AppEngineConnection(object):
         self.error = ""
         self.queue = Queue.Queue()
         self.undone_queue = Queue.Queue()
-        self.session_key_request_in_progress = False
+        self.important_request_in_progress = False
         
     def check_xml_response(self, doc):
         """Returns the status string of the servers response and sets
         an error message if there was a problem"""
-        self.xtree = ET.parse(doc)
-        self.iter = self.xtree.getiterator()
-        status = self.iter[0].attrib['status']
+        tree = ET.parse(doc)
+        status = tree.getroot().attrib['status']
         if status != "OK":
-            self.error = self.iter[0].text
+            error = tree.find("error").text
             log.error(self.error)
-        return status
+            return status, error
+        return status, tree
 
     
-    def get_tag(self, tag):
+    def get_tag(self, tree, tag):
         """Returns the first text from a tag"""
-        return self.xtree.find(tag).text
+        return self.tree.find(tag).text
         
-    def get_tags(self, tag):
+    def get_tags(self, tree, tag):
         """Returns a list of texts with given tag"""
+        iter = tree.getiterator()
         l = []
-        for i in self.iter:
+        for i in iter:
             if i.tag == tag:
                 l.append(i.text.strip())
         return l
@@ -113,9 +115,8 @@ class AppEngineConnection(object):
                                            get_avatar, self.queue)
         request.daemon = True
         request.start()
-        while request.isAlive():
-            gtk.main_iteration()
         response = self.queue.get()
+        
         return response
     
     def _app_engine_request(self, data, mapping, auto_now=False, get_avatar=False):
@@ -137,7 +138,9 @@ class AppEngineConnection(object):
             except urllib2.URLError, e:
                 log.error(e)
                 self.error = str(e)
-                return "URLError"
+        #        self.important_request_in_progress = False
+                return "URLError", "An error occurred while making request"
+         #   self.important_request_in_progress = False
             return self.check_xml_response(request)
         #POST requests
         if auto_now:
@@ -159,24 +162,24 @@ class AppEngineConnection(object):
             log.error(e)
             self.error = str(e)
             return "URLError"
-        response = self.check_xml_response(request)
+        response, tree = self.check_xml_response(request)
         if response != "OK":
             log.debug("ERROR with request to %s: %s" % (mapping, response))
         if response == "BADAUTH":
             log.info("Outdated sessionkey, attempting renewal")
-            self.session_key_request_in_progress = True
+            self.important_request_in_progress = True
             #outdated sessionkey, get a newone then redo the request
             sess_data = {"name" : self.default_values['name'],
                          "password" : self.password}
-            new_response = self._app_engine_request(sess_data, "/getsessionkey", auto_now=True)
+            new_response, tree = self._app_engine_request(sess_data, "/getsessionkey", auto_now=True)
             if new_response == "OK":
                 log.info("Redoing defered call")
-                self.default_values["session_key"] = self.get_tag("key")
-                self.expires = int(self.get_tag("expires"))
+                self.default_values["session_key"] = self.get_tag(tree, "key")
+                self.expires = int(self.get_tag(tree, "expires"))
                 self.dump_session_key()
-                response = self._app_engine_request(data, mapping)
-                self.session_key_request_in_progress = False
-        return response
+                self.important_request_in_progress = False
+                response, tree = self._app_engine_request(data, mapping)
+        return response, tree
     
     def dump_session_key(self):
         """

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Fri Jun 19 23:58:39 2009 -->
+<!--Generated with glade3 3.4.5 on Sat Jun 20 23:24:31 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -201,37 +201,11 @@
           </packing>
         </child>
         <child>
-          <widget class="GtkHBox" id="hbox2">
+          <widget class="GtkLabel" id="online_users">
             <property name="visible">True</property>
-            <child>
-              <widget class="GtkLabel" id="last_time">
-                <property name="visible">True</property>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="padding">5</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkLabel" id="username_label">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">label</property>
-                <property name="justify">GTK_JUSTIFY_RIGHT</property>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="padding">5</property>
-                <property name="pack_type">GTK_PACK_END</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
+            <property name="use_markup">True</property>
           </widget>
           <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="padding">5</property>
             <property name="position">1</property>
           </packing>
         </child>
@@ -353,17 +327,42 @@
           </packing>
         </child>
         <child>
-          <widget class="GtkLabel" id="online_users">
+          <widget class="GtkHBox" id="hbox1">
             <property name="visible">True</property>
+            <child>
+              <widget class="GtkLabel" id="last_time">
+                <property name="visible">True</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="padding">5</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="username_label">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">label</property>
+                <property name="justify">GTK_JUSTIFY_RIGHT</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="padding">5</property>
+                <property name="pack_type">GTK_PACK_END</property>
+              </packing>
+            </child>
           </widget>
           <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="padding">5</property>
+            <property name="pack_type">GTK_PACK_END</property>
             <property name="position">7</property>
           </packing>
         </child>
       </widget>
     </child>
-  </widget>
-  <widget class="GtkMenu" id="user_list">
-    <property name="visible">True</property>
   </widget>
 </glade-interface>

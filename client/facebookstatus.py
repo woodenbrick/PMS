@@ -44,12 +44,12 @@ class FaceBookStatus(object):
             return
         elif update is False:
             #lets check the PMS server for a key
-            response = self.parent.gae_conn.app_engine_request({"facebook" : "bleh"}, "/usr/facebook/retrievesessionkey")
+            response, tree = self.parent.gae_conn.app_engine_request({}, "/usr/facebook/retrievesessionkey")
             #responses OK NOFBKEY
             if response == "OK":
-                self.fb.session_key = self.parent.gae_conn.xtree.find("key").text
-                self.fb.uid = self.parent.gae_conn.xtree.find("uid").text
-                self.fb.session_key_expires = self.parent.gae_conn.xtree.find("expires").text
+                self.fb.session_key = tree.find("key").text
+                self.fb.uid = tree.find("uid").text
+                self.fb.session_key_expires = tree.find("expires").text
                 self.last_time = 0
                 self.add_to_db()
         else:

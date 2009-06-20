@@ -119,11 +119,11 @@ class Login(object):
         self.wTree.get_widget("login_error").set_text("Requesting session key...")
         data = {"name" : self.username, "password" : self.password}
         log.info("Requesting session key")
-        response = self.gae_conn.app_engine_request(data, "/getsessionkey", auto_now=True)
+        response, tree = self.gae_conn.app_engine_request(data, "/getsessionkey", auto_now=True)
         if response == "OK":
             self.wTree.get_widget("login_error").set_text("Requesting session key...OK")
-            self.gae_conn.default_values['session_key'] = self.gae_conn.get_tag("key")
-            self.gae_conn.expires = int(self.gae_conn.get_tag("expires"))
+            self.gae_conn.default_values['session_key'] = self.gae_conn.get_tag(tree, "key")
+            self.gae_conn.expires = int(self.gae_conn.get_tag(tree, "expires"))
             self.db.update_login_time(self.username)
             if self.wTree.get_widget("remember_password").get_active():
                 self.db.add_user(self.username, self.password)
@@ -131,7 +131,7 @@ class Login(object):
             self.gae_conn.dump_session_key()
             self.show_main()
         else:
-            self.wTree.get_widget("login_error").set_text(self.gae_conn.error)
+            self.wTree.get_widget("login_error").set_text(tree)
             self.wTree.get_widget("login").set_sensitive(True)
             
 

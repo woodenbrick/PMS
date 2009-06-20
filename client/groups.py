@@ -76,19 +76,16 @@ class GroupWindow():
         """Returns all the groups from the server and puts them into a treeview
         we need: a list of all groups a list of the groups the user is already a member of"""
         self.wTree.get_widget("group_error").set_text("Downloading new group list...")
-        response = self.parent.gae_conn.app_engine_request(None, "/group/list")
+        response, all_groups_tree = self.parent.gae_conn.app_engine_request(None, "/group/list")
         if response != "OK":
-            self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
+            self.wTree.get_widget("group_error").set_text("Error: " + all_groups_tree)
             return
-        all_groups_tree = self.parent.gae_conn.xtree
-        response =  self.parent.gae_conn.app_engine_request(None, "/usr/groups/%s" %
+        response, user_groups_tree =  self.parent.gae_conn.app_engine_request(None, "/usr/groups/%s" %
                                                             Settings.USERNAME)
         if response != "OK":
-            self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
+            self.wTree.get_widget("group_error").set_text("Error: " + user_groups_tree)
             return
         self.wTree.get_widget("group_error").set_text("Downloading new group list...Done")
-        
-        user_groups_tree = self.parent.gae_conn.xtree
         user_groups = []
         for i in user_groups_tree.getiterator():
             if i.tag == "name":
@@ -207,12 +204,12 @@ class GroupWindow():
         if member:
             #leave group
             self.wTree.get_widget("group_error").set_text("Leaving group %s..." % values['group'])
-            response = self.parent.gae_conn.app_engine_request(values, "/group/leave")
+            response, error = self.parent.gae_conn.app_engine_request(values, "/group/leave")
             if response == "OK":
                 self.change_membership()
                 self.wTree.get_widget("group_error").set_text("Left the group %s" % values['group'])
             else:
-                self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
+                self.wTree.get_widget("group_error").set_text("Error: " + error)
                 
         else:
             #join group
@@ -231,12 +228,12 @@ class GroupWindow():
                     values["password"] = hashlib.sha1(self.wTree.get_widget("join_group_pass").get_text()).hexdigest()
             self.wTree.get_widget("group_error").set_text("Joining group %s..." % values['group'])
 
-            response = self.parent.gae_conn.app_engine_request(values, "/group/join")
+            response, error = self.parent.gae_conn.app_engine_request(values, "/group/join")
             if response == "OK":
                 self.change_membership()
                 self.wTree.get_widget("group_error").set_text("Joined the group %s" % values['group'])
             else:
-                self.wTree.get_widget("group_error").set_text("Error: " + self.parent.gae_conn.error)
+                self.wTree.get_widget("group_error").set_text("Error: " + error)
             
     
     def on_create_group_clicked(self, widget):
@@ -266,15 +263,14 @@ class GroupWindow():
                 pass_req = True
             else:
                 pass_req = False
-            response = self.parent.gae_conn.app_engine_request(values, "/group/add")
+            response, error = self.parent.gae_conn.app_engine_request(values, "/group/add")
             if response == "OK":
                 self.wTree.get_widget("group_error").set_text("")
                 self.update_local_grouplist([values['group'], Settings.USERNAME,
                                              values['description'], pass_req, True], create=True)
                 self.wTree.get_widget("group_error").set_text("")
             else:
-                self.wTree.get_widget("group_error").set_text("Error: " +
-                                                              self.parent.gae_conn.error)
+                self.wTree.get_widget("group_error").set_text("Error: " + error)
                 #show the error message on the main group window
         self.wTree.get_widget("new_dialog").hide()
         
