@@ -10,12 +10,17 @@ import gtk
 import gtk.glade
 import sys
 import cgi
+import gobject
 from settings import Settings
 
 class NotificationSystem(object):
     
     def __init__(self, main_program):
         self.main_program = main_program
+        self.tray_icon = gtk.StatusIcon()
+        self.tray_icon.set_from_file(Settings.LOGO1)
+        self.tray_icon.connect("activate", self.main_program.activate_menu, None)
+        self.tray_icon.connect("popup-menu", self.main_program.popup_menu, None)
         self.timeout = 5
     
     def new_message(self, last_msg, msg_count, nicetime, avatar):
@@ -26,14 +31,16 @@ class NotificationSystem(object):
             footer = ""
 
         formatted_msg = "%s\n%s\n%s" % (cgi.escape(last_msg[3]), nicetime, footer)
+
         self.popup(header, formatted_msg, avatar)
         
     def change_users_online_status(self, came_online, went_offline):
-        if len(came_online) == 0 or len(went_offline) == 0:
+        if len(came_online) == 0 and len(went_offline) == 0:
             return
         came_str = " ,".join(came_online) + " came online\n" if len(came_online) > 0 else ""
         went_str = " ,".join(went_offline) + " went offline" if len(went_offline) > 0 else ""
-        msg = self.popup("PMS", came_str + went_str, None)
+        print self
+        self.popup("PMS", came_str + went_str, None)
         
 class WindowsNotifier(NotificationSystem):
     def __init__(self, main_program):
@@ -45,9 +52,11 @@ class WindowsNotifier(NotificationSystem):
     def popup(self, header, formatted_msg, avatar):
         #currently i dont know how to show windows users avatar in bubble
         #may not be possible
-        print 'show window'
+        self.wTree.get_widget("header").set_markup("<b>%s</b>" % header)
+        self.wTree.get_widget("message").set_text(formatted_msg)
+        self.wTree.get_widget("avatar").set_from_pixbuf(avatar)
         self.wTree.get_widget("window").show()
-        self.hide_timer = gobject.timeout_add(5000, self.hide_notification)
+        self.hide_timer = gobject.timeout_add(3000, self.hide_notification)
         
     def hide_notification(self):
         gobject.source_remove(self.hide_timer)
@@ -65,10 +74,7 @@ class WindowsNotifier(NotificationSystem):
 class LinuxNotifier(NotificationSystem):
     def __init__(self, main_program):
         NotificationSystem.__init__(self, main_program)
-        self.tray_icon = gtk.StatusIcon()
-        self.tray_icon.set_from_file(Settings.LOGO1)
-        self.tray_icon.connect("activate", self.main_program.activate_menu, None)
-        self.tray_icon.connect("popup-menu", self.main_program.popup_menu, None)
+
         
     def popup(self, header, formatted_msg, avatar):
         if sys.platform == "linux2":

@@ -58,6 +58,7 @@ class PMS(object):
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
         #XXX we are using the linux notifier for now
         #and disabling notify for windows putas
+        #self.notifier = notification.LinuxNotifier(self)
         self.notifier = notification.WindowsNotifier(self)
 
         #add non stock icons to menus
@@ -138,10 +139,13 @@ class PMS(object):
         shenanigans"""
         user_list = [user.text for user in tree.findall("user")]
         #XXX check if our user is actually interested in these users
+        #currently it just returns everyone
         if not hasattr(self, "online_users"):
             self.online_users = []
         came_online = [user for user in user_list if user not in self.online_users]
         went_offline = [user for user in self.online_users if user not in user_list]
+        #XXX when user goes offline they arent removed from the list
+        /
         self.online_users.extend(came_online)
         self.notifier.change_users_online_status(came_online, went_offline)
         markup = "<span foreground='red'><b>%s users online: </b>" % len(
