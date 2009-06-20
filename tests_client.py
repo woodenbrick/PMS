@@ -5,6 +5,9 @@ import time
 from client.misc import nicetime
 from client import libpms
 from client import ircclient
+from client.settings import Settings
+
+Settings.GLADE = "client/glade/"
 class NiceTimeCorrectTime(unittest.TestCase):
     #known times
     def setUp(self):
@@ -34,11 +37,23 @@ class IRCNickTest(unittest.TestCase):
             ("some_one", "pms_some_one!n=pms_Dani@79-100-88-231.btc-net.bg"),
             ("Dangus", "pms_Dangus")
         )
+        self.irc = ircclient.IRCGlobal("woodenbrick")
+        self.room = ircclient.IRCRoom(self.irc, "#lordheads")
         
     def test_irc_to_pms(self):
         for pms, irc in self.known_nicks:
-            self.assertEqual(ircclient.convert_irc_name_to_pms(irc), pms)
+            self.assertEqual(self.room.convert_irc_name_to_pms(irc), pms)
 
+
+class LibPMSTest(unittest.TestCase):
+    def setUp(self):
+        self.conn = libpms.AppEngineConnection()
+        self.xml = open("test_data/loggedin.xml")
+
+    def test_xml_parser(self):
+        response, tree = self.conn.check_xml_response(self.xml)
+        self.assertEqual(response, "OK")
+        
 if __name__ == "__main__":
     #testcase = NiceTimeCorrectTime()
     unittest.main()
