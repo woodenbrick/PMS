@@ -69,8 +69,6 @@ class AppEngineConnection(object):
     def __init__(self):
         self.default_values = {}
         self.error = ""
-        self.queue = Queue.Queue()
-        #self.undone_queue = Queue.Queue()
         self.important_request_in_progress = False
         
     def check_xml_response(self, doc):
@@ -110,9 +108,9 @@ class AppEngineConnection(object):
           - auto_now: True if the current time should be included in the request
           - get_avatar: True if the request is to download an image
         """
-        
+        queue = Queue.Queue()
         request = ThreadedAppEngineRequest(self, data, mapping, auto_now,
-                                           get_avatar, self.queue)
+                                           get_avatar, queue)
         request.daemon = True
         request.start()
         while request.isAlive():
@@ -120,7 +118,7 @@ class AppEngineConnection(object):
             if hasattr(self, "discard_threads") and mapping != "/usr/log/out":
                 log.debug('discarding thread: %s' % mapping)
                 return "DISCARD", "Thread has been discarded"
-        response = self.queue.get()
+        response = queue.get()
         
         return response
     
