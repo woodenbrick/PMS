@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 
 class Settings(object):
     NAME = "pms"
@@ -21,16 +22,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pms.  If not, see http://www.gnu.org/licenses/
 """
-    FACEBOOK_TIMEOUT = 300000
-    AVATAR_CHECK_TIMEOUT = 900000
+    FACEBOOK_TIMEOUT = 70000
+    AVATAR_CHECK_TIMEOUT = 100000
     NICETIME_TIMOUT = 60000
-    #these will be set at runtime
-    HOME = ""
-    HOMEMAIN = ""
-    IMAGES = ""
-    GLADE = ""
+    #these will be tweaked at runtime if necessary,
+    #however for testing I have included some defaults
+    HOME = os.environ['HOME'] + ".eventnotify/"
+    HOMEMAIN = os.environ['HOME']
+    IMAGES = "images/"
+    GLADE = "glade/"
     LOGGING_LEVEL = None
-    LOGO1 = ""
-    LOGO2 = ""
-    SERVER = "" 
+    LOGO1 = "images/logo1.png"
+    LOGO2 = "images/log2.png"
+    LOGO1_SMALL = "images/logo1_64.png"
+    SERVER = "http://wor-creator.appspot.com" 
     USERNAME = ""
