@@ -97,11 +97,6 @@ class PMS(object):
         self.fill_messages()
         self.check_in_progress = False
         self.go_online()
-        #XXXfor some reason, if the requests for msg check and login are made at the same time
-        #we lose the login list
-        #it may have something to do with the threads in libpms
-        #we will block requests from /msg/check or /usr/log/in until the request is done
-        self.block = False
         self.login_timer = gobject.timeout_add(60000, self.go_online)
         self.check_login_timer = gobject.timeout_add(3000, self.check_online)
         self.check_messages()
@@ -122,9 +117,6 @@ class PMS(object):
     
     def check_online(self):
         """get all logged in users"""
-        if self.check_in_progress:
-            log.debug("/msg/check in progress cancelling online check")
-            return True
         response, tree = self.gae_conn.app_engine_request(None, "/usr/log/in")
         if response == "OK":
             self.set_online(tree)
@@ -144,7 +136,7 @@ class PMS(object):
         went_offline = [user for user in self.online_users if user not in user_list]
         #XXX when user goes offline they arent removed from the list
         #http://www.pygtk.org/docs/pygtk/class-gtkwindow.html#method-gtkwindow--move
-        self.online_users.extend(came_online)
+        self.online_users = user_list
         self.notifier.change_users_online_status(came_online, went_offline, self.avatars)
         markup = "<span foreground='red'><b>%s users online: </b>" % len(
             self.online_users) + ", ".join(self.online_users) + "</span>"
