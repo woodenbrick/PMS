@@ -119,7 +119,7 @@ class AppEngineConnection(object):
             gtk.main_iteration()
             if hasattr(self, "discard_threads") and mapping != "/usr/log/out":
                 log.debug('discarding thread: %s' % mapping)
-                return False
+                return "DISCARD", "Thread has been discarded"
         response = self.queue.get()
         
         return response

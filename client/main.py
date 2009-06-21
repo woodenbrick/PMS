@@ -151,9 +151,6 @@ class PMS(object):
         self.wTree.get_widget("online_users").set_markup(markup)
 
     
-    def go_offline(self):
-        """Sets a user to offline status"""
-        self.gae_conn.app_engine_request({}, "/usr/log/out")
 
     def chat_room_opened(self, widget, group):
         group_irc = "#pms_" + group.replace(" ", "_")
@@ -255,12 +252,7 @@ class PMS(object):
             log.info("Check in progress, cancelling")
             return True
         self.check_in_progress = True
-        try:
-            response, tree = self.gae_conn.app_engine_request({"time" : self.last_time}, "/msg/check")
-        except TypeError:
-            log.debug("/msg/check fucked up")
-            self.check_in_progress = False
-            return True
+        response, tree = self.gae_conn.app_engine_request({"time" : self.last_time}, "/msg/check")
         if response == "OK":
             self.update_status_bar("Last update: " + time.strftime("%I:%M:%S %p",
                                                     time.localtime(time.time())), time=True)
@@ -296,7 +288,6 @@ class PMS(object):
         self.main_window.hide()
         self.gae_conn.discard_threads = True
         gobject.source_remove(self.login_timer)
-        self.go_offline()
         gobject.source_remove(self.check_login_timer)
         gobject.source_remove(self.check_timer)
         gobject.source_remove(self.avatar_timer)
@@ -305,6 +296,7 @@ class PMS(object):
             gobject.source_remove(self.facebook_timer)
         except AttributeError:
             pass
+        self.gae_conn.app_engine_request({}, "/usr/log/out")
         if widget.name == "logout_main" or widget.name == "logout_right_click":
             self.wTree.get_widget("window").destroy()
             login.Login(new_user=True)

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Sun Jun 21 16:33:47 2009 -->
+<!--Generated with glade3 3.4.5 on Sun Jun 21 16:41:23 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="window">
     <property name="width_request">300</property>
@@ -11,6 +11,7 @@
     <property name="skip_pager_hint">True</property>
     <property name="urgency_hint">True</property>
     <property name="accept_focus">False</property>
+    <property name="decorated">False</property>
     <property name="deletable">False</property>
     <property name="gravity">GDK_GRAVITY_SOUTH_EAST</property>
     <property name="opacity">0.5</property>
