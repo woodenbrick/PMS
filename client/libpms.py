@@ -117,6 +117,9 @@ class AppEngineConnection(object):
         request.start()
         while request.isAlive():
             gtk.main_iteration()
+            if hasattr(self, "discard_threads"):
+                print 'discarding thread: %s' % mapping
+                return False
         response = self.queue.get()
         
         return response

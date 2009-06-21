@@ -291,6 +291,7 @@ class PMS(object):
     def close_pms(self, widget=None):
         self.notifier.hide()
         self.main_window.hide()
+        self.gae_conn.discard_threads = True
         gobject.source_remove(self.login_timer)
         self.go_offline()
         gobject.source_remove(self.check_login_timer)

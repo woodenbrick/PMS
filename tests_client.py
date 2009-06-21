@@ -5,6 +5,7 @@ import time
 from client.misc import nicetime
 from client import libpms
 from client import ircclient
+from client import notification
 from client.settings import Settings
 
 Settings.GLADE = "client/glade/"
@@ -53,6 +54,8 @@ class LibPMSTest(unittest.TestCase):
     def test_xml_parser(self):
         response, tree = self.conn.check_xml_response(self.xml)
         self.assertEqual(response, "OK")
+        
+
         
 if __name__ == "__main__":
     #testcase = NiceTimeCorrectTime()
