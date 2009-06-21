@@ -26,6 +26,8 @@ import shutil
 import logging
 
 if sys.platform == "win32":
+    Settings.HOME = os.path.join(os.environ['HOMEDRIVE'], os.environ['HOMEPATH'], 'eventnotify') + os.sep
+    Settings.HOME_MAIN = os.environ['HOMEPATH']
     #check if we are running from src or an executable
     if hasattr(sys, "frozen"):
         src_dir = os.path.realpath(os.path.join(os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding())), ".."))
@@ -51,16 +53,7 @@ Settings.LOGO1 = Settings.IMAGES + "logo1.png"
 Settings.LOGO1_SMALL = Settings.IMAGES + "logo1_64.png"
 Settings.LOGO2 = Settings.IMAGES + "logo2.png"
 
-
-try:
-    Settings.HOME = os.path.join(os.environ['HOME'], '.eventnotify') + os.sep
-    Settings.HOME_MAIN = os.environ['HOME']
-except KeyError:    
-    Settings.HOME = os.path.join(os.environ['HOMEDRIVE'], os.environ['HOMEPATH'], 'eventnotify') + os.sep
-    Settings.HOME_MAIN = os.environ['HOMEPATH']
-
-parser = optparse.OptionParser(version="%s %s by %s" % (Settings.NAME,
-                                                        Settings.VERSION,
+parser = optparse.OptionParser(version="%s %s by %s" % (Settings.NAME, Settings.VERSION,
                                                         Settings.AUTHOR))
 parser.add_option('--error-log', '-e', action="store_true",
                   help=("logs all stderr messages to the home directory (error.log)"))
@@ -70,24 +63,16 @@ parser.add_option('--debug', '-d', action="store_true",
                   help=("Show debug messages"))
 options, args = parser.parse_args()
 
+Settings.LOGGING_LEVEL = logging.DEBUG if options.debug else logging.INFO
 if options.local_server:
     Settings.SERVER = "http://127.0.0.1:8080"
     Settings.HOME = Settings.HOME + "dev" + os.sep
-else:
-    Settings.SERVER = "http://wor-creator.appspot.com"
-
-if options.debug:
-    Settings.LOGGING_LEVEL = logging.DEBUG
-else:
-    Settings.LOGGING_LEVEL = logging.INFO
-
 try:
     os.makedirs(os.path.join(Settings.HOME, "thumbnails", "facebook"))
     shutil.copy(Settings.IMAGES + "avatar-default.png",
                 os.path.join(Settings.HOME, "thumbnails", "avatar-default.png"))
 except OSError:
     pass
-
 
 gobject.threads_init()
 login.Login()
