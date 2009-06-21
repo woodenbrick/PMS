@@ -347,6 +347,8 @@ class PMS(object):
             f = open(Settings.HOME + "av_dl_" + Settings.USERNAME, "r")
             last_download = cPickle.load(f)
             f.close()
+            if last_download is None:
+                last_download = "all"
         except IOError:
             log.debug("no avatar list for this user, downloading all")
             last_download = "all"
