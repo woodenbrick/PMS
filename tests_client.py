@@ -21,7 +21,7 @@ class NiceTimeCorrectTime(unittest.TestCase):
             ("10 seconds ago.", time.time() - 10),
             ("1 minute ago.", time.time() - 60),
             ("2 minutes ago.", time.time() - 120),
-            ("5 hours ago.", time.time() - 20000)
+            ("5 hours ago.", time.time() - 18000)
     )
     
     def test_check_times(self):
@@ -55,7 +55,14 @@ class LibPMSTest(unittest.TestCase):
         response, tree = self.conn.check_xml_response(self.xml)
         self.assertEqual(response, "OK")
         
-
+class NotifyTest(unittest.TestCase):
+    def setUp(self):
+        self.notifier = notification.WindowsNotifier(None)
+        Settings.GLADE = "client/glade/"
+    
+    def test_popup_listing(self):
+        self.notifier.popup("Hello", "Testing", None)
+        self.notifier.popup("Test", "Test again", None)
         
 if __name__ == "__main__":
     #testcase = NiceTimeCorrectTime()

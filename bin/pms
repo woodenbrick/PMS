@@ -48,7 +48,9 @@ from client import login
 Settings.IMAGES = os.path.join(src_dir, "images") + os.sep
 Settings.GLADE = os.path.join(src_dir, "glade") + os.sep
 Settings.LOGO1 = Settings.IMAGES + "logo1.png"
+Settings.LOGO1_SMALL = Settings.IMAGES + "logo1_64.png"
 Settings.LOGO2 = Settings.IMAGES + "logo2.png"
+
 
 try:
     Settings.HOME = os.path.join(os.environ['HOME'], '.eventnotify') + os.sep

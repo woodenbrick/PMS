@@ -104,9 +104,9 @@ class PreferencesWindow(object):
         self.parent.wTree.get_widget("notifications").set_active(self.preferences.popup)
         #check if avatar has changed
         if self.new_avatar:
-            response = self.parent.gae_conn.send_avatar(self.thumb_path)
+            response, error = self.parent.gae_conn.send_avatar(self.thumb_path)
             if response != "OK":
-                self.wTree.get_widget("preference_error").set_text(self.parent.gae_conn.error)
+                self.wTree.get_widget("preference_error").set_text(error)
                 return
             if sys.platform == "linux2":
                 os.rename(self.thumb_path, self.preferences.avatar)

@@ -103,7 +103,7 @@ class PMS(object):
         #we will block requests from /msg/check or /usr/log/in until the request is done
         self.block = False
         self.login_timer = gobject.timeout_add(60000, self.go_online)
-        self.check_login_timer = gobject.timeout_add(5000, self.check_online)
+        self.check_login_timer = gobject.timeout_add(3000, self.check_online)
         self.check_messages()
         self.check_timer = gobject.timeout_add(self.preferences.msg_check * 1000,
                                                self.check_messages)
@@ -118,8 +118,6 @@ class PMS(object):
         response, tree = self.gae_conn.app_engine_request({}, "/usr/log/in")
         if response == "OK":
             self.set_online(tree)
-        else:
-            print self.gae_conn.error
         return True
     
     def check_online(self):
@@ -131,7 +129,7 @@ class PMS(object):
         if response == "OK":
             self.set_online(tree)
         else:
-            self.wTree.get_widget("main_error").set_text(self.gae_conn.error)
+            self.wTree.get_widget("main_error").set_text(tree)
         return True
         
     def set_online(self, tree):
@@ -147,7 +145,7 @@ class PMS(object):
         #XXX when user goes offline they arent removed from the list
         #http://www.pygtk.org/docs/pygtk/class-gtkwindow.html#method-gtkwindow--move
         self.online_users.extend(came_online)
-        self.notifier.change_users_online_status(came_online, went_offline)
+        self.notifier.change_users_online_status(came_online, went_offline, self.avatars)
         markup = "<span foreground='red'><b>%s users online: </b>" % len(
             self.online_users) + ", ".join(self.online_users) + "</span>"
         self.wTree.get_widget("online_users").set_markup(markup)
@@ -257,14 +255,19 @@ class PMS(object):
             log.info("Check in progress, cancelling")
             return True
         self.check_in_progress = True
-        response, tree = self.gae_conn.app_engine_request({"time" : self.last_time}, "/msg/check")
+        try:
+            response, tree = self.gae_conn.app_engine_request({"time" : self.last_time}, "/msg/check")
+        except TypeError:
+            log.debug("/msg/check fucked up")
+            self.check_in_progress = False
+            return True
         if response == "OK":
             self.update_status_bar("Last update: " + time.strftime("%I:%M:%S %p",
                                                     time.localtime(time.time())), time=True)
             self.update_status_bar("")
         else:
             self.check_in_progress = False
-            self.update_status_bar(self.gae_conn.error)
+            self.update_status_bar(tree)
             return True
         make_adj = True if self.wTree.get_widget("scrolledwindow").get_vadjustment().value == 0 else False
         messages = []
