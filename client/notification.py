@@ -39,13 +39,13 @@ class NotificationSystem(object):
             return False
         try:
             avatar = avatars[came_online[0]].pixbuf
-        except IndexError:
+        except:
             try:
                 avatar = avatars[went_offline[0]].pixbuf
-            except IndexError:
+            except:
                 avatar = gtk.gdk.pixbuf_new_from_file(Settings.LOGO1_SMALL)
-        came_str = ", ".join(came_online) + " came online\n" if len(came_online) > 0 else ""
-        went_str = ", ".join(went_offline) + " went offline" if len(went_offline) > 0 else ""
+        came_str = ", ".join(came_online) + " came online. " if len(came_online) > 0 else ""
+        went_str = ", ".join(went_offline) + " went offline." if len(went_offline) > 0 else ""
         
         self.popup("PMS", came_str + went_str, avatar)
         
@@ -85,7 +85,8 @@ class WindowsPopup(object):
         self.wTree.get_widget("avatar").set_from_pixbuf(avatar)
         self.window = self.wTree.get_widget("window")
         self.x, self.y = self.window.get_size()
-        self.window.move(gtk.gdk.screen_width() - self.x, gtk.gdk.screen_height()- self.y - offset)
+        self.WINDOWS_TASKBAR_OFFSET = 30
+        self.window.move(gtk.gdk.screen_width() - self.x, gtk.gdk.screen_height()- self.y - offset- self.WINDOWS_TASKBAR_OFFSET)
         self.window.show()
         self.wTree.get_widget("counter").set_markup("<b>5</b>")
         self.fade_in_timer = gobject.timeout_add(100, self.fade_in)
@@ -97,7 +98,7 @@ class WindowsPopup(object):
         new position is this popups position in the stack, offset is
         the offset from the bottom of the entire stack"""
         new_offset = self.y + offset
-        self.window.move(gtk.gdk.screen_width()-self.x, gtk.gdk.screen_height()-new_offset)
+        self.window.move(gtk.gdk.screen_width()-self.x, gtk.gdk.screen_height()-new_offset - self.WINDOWS_TASKBAR_OFFSET)
         return new_offset
 
     
