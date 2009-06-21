@@ -182,7 +182,7 @@ class Login(object):
             "password" : hashlib.sha1(password).hexdigest(),
             "email" : email
         }
-        response = self.gae_conn.app_engine_request(data, "/usr/add")
+        response, error = self.gae_conn._app_engine_request(data, "/usr/add")
         if response == "OK":
             self.wTree.get_widget("login_window").show()
             self.wTree.get_widget("register_window").hide()
@@ -190,7 +190,7 @@ class Login(object):
             self.wTree.get_widget("username_entry").set_text(data['name'])
             self.wTree.get_widget("password_entry").set_text(data['password'])
         else:
-            self.wTree.get_widget("register_error").set_text(self.gae_conn.error)
+            self.wTree.get_widget("register_error").set_text(error)
     
     def sanity_check(self, type, value, pass_check=None):
         """types are email, username, password.  use pass_check to compare passwords with value"""

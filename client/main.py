@@ -145,7 +145,7 @@ class PMS(object):
         came_online = [user for user in user_list if user not in self.online_users]
         went_offline = [user for user in self.online_users if user not in user_list]
         #XXX when user goes offline they arent removed from the list
-        /http://www.pygtk.org/docs/pygtk/class-gtkwindow.html#method-gtkwindow--move
+        #http://www.pygtk.org/docs/pygtk/class-gtkwindow.html#method-gtkwindow--move
         self.online_users.extend(came_online)
         self.notifier.change_users_online_status(came_online, went_offline)
         markup = "<span foreground='red'><b>%s users online: </b>" % len(

@@ -38,7 +38,7 @@ log = new_logger("libpms.py", Settings.LOGGING_LEVEL)
 
 from poster.encode import multipart_encode
 from poster.streaminghttp import register_openers
-
+#29fd3
 
 class ThreadedAppEngineRequest(threading.Thread):
     """
@@ -79,7 +79,7 @@ class AppEngineConnection(object):
         tree = ET.parse(doc)
         status = tree.getroot().attrib['status']
         if status != "OK":
-            error = tree.find("error").text
+            error = tree.getroot().text
             log.error(self.error)
             return status, error
         return status, tree
@@ -87,7 +87,7 @@ class AppEngineConnection(object):
     
     def get_tag(self, tree, tag):
         """Returns the first text from a tag"""
-        return self.tree.find(tag).text
+        return tree.find(tag).text
         
     def get_tags(self, tree, tag):
         """Returns a list of texts with given tag"""

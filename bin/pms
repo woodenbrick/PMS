@@ -32,6 +32,7 @@ if sys.platform == "win32":
     else:
         src_dir = os.path.realpath(os.path.join(os.path.dirname(unicode(__file__, sys.getfilesystemencoding())), ".."))
     sys.path.insert(0, src_dir)
+    src_dir = os.path.join(src_dir, "client")
 else:
     #linux, check if running from src or executable 
     src_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
