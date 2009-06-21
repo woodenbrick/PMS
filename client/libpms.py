@@ -70,7 +70,7 @@ class AppEngineConnection(object):
         self.default_values = {}
         self.error = ""
         self.queue = Queue.Queue()
-        self.undone_queue = Queue.Queue()
+        #self.undone_queue = Queue.Queue()
         self.important_request_in_progress = False
         
     def check_xml_response(self, doc):
@@ -115,6 +115,8 @@ class AppEngineConnection(object):
                                            get_avatar, self.queue)
         request.daemon = True
         request.start()
+        while request.isAlive():
+            gtk.main_iteration()
         response = self.queue.get()
         
         return response
@@ -139,7 +141,7 @@ class AppEngineConnection(object):
                 log.error(e)
                 self.error = str(e)
         #        self.important_request_in_progress = False
-                return "URLError", "An error occurred while making request"
+                return "URLError", e
          #   self.important_request_in_progress = False
             return self.check_xml_response(request)
         #POST requests
@@ -160,8 +162,8 @@ class AppEngineConnection(object):
             request = urllib2.urlopen(Settings.SERVER + mapping, encoded_values)
         except urllib2.URLError, e:
             log.error(e)
-            self.error = str(e)
-            return "URLError"
+            self.error = str(e.reason)
+            return "URLError", self.error
         response, tree = self.check_xml_response(request)
         if response != "OK":
             log.debug("ERROR with request to %s: %s" % (mapping, response))

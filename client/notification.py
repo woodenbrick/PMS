@@ -42,6 +42,12 @@ class NotificationSystem(object):
         print self
         self.popup("PMS", came_str + went_str, None)
         
+    def hide(self):
+        self.tray_icon.set_visible(False)
+        
+    def set_icon(self, state=Settings.LOGO1):
+        self.tray_icon.set_from_file(state)
+        
 class WindowsNotifier(NotificationSystem):
     def __init__(self, main_program):
         NotificationSystem.__init__(self, main_program)
@@ -50,25 +56,42 @@ class WindowsNotifier(NotificationSystem):
         self.wTree.signal_autoconnect(self)
         
     def popup(self, header, formatted_msg, avatar):
-        #currently i dont know how to show windows users avatar in bubble
-        #may not be possible
         self.wTree.get_widget("header").set_markup("<b>%s</b>" % header)
         self.wTree.get_widget("message").set_text(formatted_msg)
         self.wTree.get_widget("avatar").set_from_pixbuf(avatar)
+        self.wTree.get_widget("window").set_opacity(0.5)
+        self.wTree.get_widget("window").set_gravity(gtk.gdk.GRAVITY_SOUTH_EAST)
+        self.x, self.y = self.wTree.get_widget("window").get_size()
+        self.wTree.get_widget("window").move(gtk.gdk.screen_width() - self.x, gtk.gdk.screen_height()-self.y)
         self.wTree.get_widget("window").show()
-        self.hide_timer = gobject.timeout_add(3000, self.hide_notification)
+        self.in_progress = True
+        self.fade_in_timer = gobject.timeout_add(100, self.fade_in)
         
-    def hide_notification(self):
-        gobject.source_remove(self.hide_timer)
-        self.wTree.get_widget("window").hide()
+    
+    def fade_in(self):
+        opacity = self.wTree.get_widget("window").get_opacity()
+        opacity += 0.07
+        if opacity >= 1:
+            gobject.timeout_add(3000, self.wait)
+            return False
+        self.wTree.get_widget("window").set_opacity(opacity)
+        return True
+            
+    def wait(self):
+        self.fade_out_timer = gobject.timeout_add(100, self.fade_out)
+        return False
+      
+    
+    def fade_out(self):
+        opacity = self.wTree.get_widget("window").get_opacity()
+        opacity -= 0.07
+        if opacity <= 0:
+            self.in_progress = False
+            return False
+        self.wTree.get_widget("window").set_opacity(opacity)
+        return True
         
-    def hide(self):
-        pass
-        #self.tray_icon.OnDestroy()
         
-    def set_icon(self, state=Settings.LOGO1):
-        #currently not working
-        pass
         
     
 class LinuxNotifier(NotificationSystem):
@@ -92,11 +115,7 @@ class LinuxNotifier(NotificationSystem):
         else:
             print 'Currently windows notifications are not supported'
         
-    def hide(self):
-        self.tray_icon.set_visible(False)
-        
-    def set_icon(self, state=Settings.LOGO1):
-        self.tray_icon.set_from_file(state)
+
     
     def clear_taskbar_cb(self, n, action):
         assert action == "clear_new"
