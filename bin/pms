@@ -23,7 +23,6 @@ import sys
 import optparse
 import cPickle
 import shutil
-import logging
 
 if sys.platform == "win32":
     Settings.HOME = os.path.join(os.environ['HOMEDRIVE'], os.environ['HOMEPATH'], 'eventnotify') + os.sep
@@ -63,7 +62,8 @@ parser.add_option('--debug', '-d', action="store_true",
                   help=("Show debug messages"))
 options, args = parser.parse_args()
 
-Settings.LOGGING_LEVEL = logging.DEBUG if options.debug else logging.INFO
+if options.debug:
+    Settings.LOGGING_LEVEL = 10
 if options.local_server:
     Settings.SERVER = "http://127.0.0.1:8080"
     Settings.HOME = Settings.HOME + "dev" + os.sep
