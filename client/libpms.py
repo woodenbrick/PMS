@@ -29,13 +29,14 @@ import cPickle
 import threading
 import Queue
 import socket
-socket.setdefaulttimeout(10)
+socket.setdefaulttimeout(15)
 
 from xml.etree import ElementTree as ET
 from settings import Settings
 from misc import new_logger
 log = new_logger("libpms.py", Settings.LOGGING_LEVEL)
 
+from poster import filesend
 from poster.encode import multipart_encode
 from poster.streaminghttp import register_openers
 #29fd3
@@ -218,12 +219,12 @@ class AppEngineConnection(object):
           - filename: The path to the filename that is to be uploaded
         """
         register_openers()
-        data = {"avatar": open(filename)}
+        data = {"avatar": open(filename, "rb")}
         data.update(self.default_values)
         datagen, headers = multipart_encode(data)
         request = urllib2.Request(Settings.SERVER + "/usr/changeavatar", datagen, headers)
         return self.check_xml_response(urllib2.urlopen(request))
-        
+
 import facebook       
 class ThreadedFBConnection(threading.Thread):
     

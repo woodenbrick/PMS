@@ -38,7 +38,7 @@ class PreferencesWindow(object):
         self.wTree.signal_autoconnect(self)
         self.set_gui()
         self.new_avatar = False
-        self.thumb_path = os.path.join(Settings.HOME, "thumbnails", "_temp.thumbnail")
+        self.thumb_path = os.path.join(Settings.HOME, "thumbnails", "temp.thumbnail")
 
         
     def set_gui(self):

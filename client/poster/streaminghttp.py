@@ -24,7 +24,6 @@ Example usage:
 
 >>> req = urllib2.Request("http://localhost:5000", f, {'Content-Length': len(s)})
 """
-
 import httplib, urllib2, socket
 from httplib import NotConnected
 

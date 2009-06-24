@@ -27,8 +27,13 @@ along with pms.  If not, see http://www.gnu.org/licenses/
     NICETIME_TIMOUT = 60000
     #these will be tweaked at runtime if necessary,
     #however for testing I have included some defaults
-    HOME = os.environ['HOME'] + "/.eventnotify/"
-    HOMEMAIN = os.environ['HOME']
+    try:
+        HOME = os.environ['HOME'] + "/.eventnotify/"
+        HOMEMAIN = os.environ['HOME']
+    except KeyError:
+        HOME = os.path.join(os.environ['HOMEDRIVE'], os.environ['HOMEPATH'],                            'eventnotify') + os.sep
+        HOMEMAIN = os.environ['HOMEPATH']
+
     IMAGES = "images/"
     GLADE = "glade/"
     LOGGING_LEVEL = 20
