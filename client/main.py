@@ -39,9 +39,8 @@ import notification
 import facebookstatus
 from settings import Settings
 from misc import new_logger
-log = new_logger("main.py", Settings.LOGGING_LEVEL)
 import ircclient
-
+log = new_logger("main.py")
 
 class PMS(object):
     

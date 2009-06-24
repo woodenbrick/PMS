@@ -28,11 +28,10 @@ import main
 import cPickle
 from settings import Settings
 from misc import new_logger
-log = new_logger("login.py", Settings.LOGGING_LEVEL)
+log = new_logger("login.py")
 
 
 class Login(object):
-    
     def __init__(self, new_user=False):
         self.wTree = gtk.glade.XML(Settings.GLADE + "login.glade")
         self.wTree.signal_autoconnect(self)

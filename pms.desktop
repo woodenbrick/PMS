@@ -3,7 +3,7 @@
 Type=Application
 Name=PMS
 Comment=Private Microblogging Service
-Exec=/usr/bin/pms
+Exec=/usr/bin/pms -e
 Terminal=false
 Categories=Network;
 StartupNotify=false

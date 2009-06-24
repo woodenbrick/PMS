@@ -16,19 +16,21 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with pms.  If not, see http://www.gnu.org/licenses/
-
 import time
 import datetime
 import logging
+from settings import Settings
 
-def new_logger(name, level):
+def new_logger(name):
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(Settings.LOGGING_LEVEL)
     ch = logging.StreamHandler()
-    ch.setLevel(level)
+    ch.setLevel(Settings.LOGGING_LEVEL)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+    filelog = logging.FileHandler(Settings.HOME + "debug.log")
+    logger.addHandler(filelog)
     return logger
 
 def nicetime(past_time, fuzzy=False, length=1):

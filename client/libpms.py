@@ -34,11 +34,10 @@ socket.setdefaulttimeout(15)
 from xml.etree import ElementTree as ET
 from settings import Settings
 from misc import new_logger
-log = new_logger("libpms.py", Settings.LOGGING_LEVEL)
 
-from libs.poster.encode import multipart_encode
-from libs.poster.streaminghttp import register_openers
-#29fd3
+
+
+log = new_logger("libpms.py")
 
 class ThreadedAppEngineRequest(threading.Thread):
     """
@@ -64,6 +63,7 @@ class ThreadedAppEngineRequest(threading.Thread):
 
 
 class AppEngineConnection(object):
+    
     """Creates a new connection to the GAE"""
     
     def __init__(self):
@@ -217,7 +217,8 @@ class AppEngineConnection(object):
          :Parameters:
           - filename: The path to the filename that is to be uploaded
         """
-        print 'FILENAME', filename
+        from libs.poster.encode import multipart_encode
+        from libs.poster.streaminghttp import register_openers
         register_openers()
         f = open(filename, "rb")
         data = {"avatar": f}

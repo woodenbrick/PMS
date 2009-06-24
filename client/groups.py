@@ -25,10 +25,11 @@ import pango
 import gobject
 from settings import Settings
 from misc import new_logger, nicetime
-log = new_logger("group.py", Settings.LOGGING_LEVEL)
+log = new_logger("group.py")
 
 class GroupWindow():
     def __init__(self, parent):
+        
         self.parent = parent
         self.wTree = gtk.glade.XML(Settings.GLADE + "group.glade")
         self.wTree.signal_autoconnect(self)

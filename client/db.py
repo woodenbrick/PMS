@@ -22,7 +22,7 @@ import libpms
 import datetime
 from misc import new_logger
 from settings import Settings
-log = new_logger("database.py", Settings.LOGGING_LEVEL)
+log = new_logger("database.py")
 
 class DB(object):
     

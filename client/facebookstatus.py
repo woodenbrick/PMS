@@ -7,9 +7,10 @@ import Queue
 import gtk
 from settings import Settings
 from misc import new_logger
-log = new_logger("facebookstatus.py", Settings.LOGGING_LEVEL)
+log = new_logger("facebookstatus.py")
 
 class FaceBookStatus(object):
+    
     def __init__(self, parent):
         self.parent = parent
         self.db = self.parent.user_db

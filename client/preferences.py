@@ -27,7 +27,7 @@ import gobject
 import sys
 from settings import Settings
 from misc import new_logger
-log = new_logger("Preferences.py", Settings.LOGGING_LEVEL)
+log = new_logger("Preferences.py")
 
 class PreferencesWindow(object):
     
