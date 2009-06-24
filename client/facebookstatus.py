@@ -1,4 +1,4 @@
-import facebook
+from libs import facebook
 import webbrowser
 import cPickle
 import time

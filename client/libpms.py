@@ -36,9 +36,8 @@ from settings import Settings
 from misc import new_logger
 log = new_logger("libpms.py", Settings.LOGGING_LEVEL)
 
-from poster import filesend
-from poster.encode import multipart_encode
-from poster.streaminghttp import register_openers
+from libs.poster.encode import multipart_encode
+from libs.poster.streaminghttp import register_openers
 #29fd3
 
 class ThreadedAppEngineRequest(threading.Thread):

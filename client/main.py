@@ -56,11 +56,7 @@ class PMS(object):
         self.main_window = self.wTree.get_widget("window")
         self.main_window.set_icon_from_file(Settings.LOGO1)
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
-        #XXX we are using the linux notifier for now
-        #and disabling notify for windows putas
-        #self.notifier = notification.LinuxNotifier(self)
-        self.notifier = notification.WindowsNotifier(self)
-
+        self.notifier = notification.CrossPlatformNotifier(self)
         #add non stock icons to menus
         images = ["refresh", "bug", "groups"]
         for i in images:
@@ -209,8 +205,6 @@ class PMS(object):
             response, error = self.gae_conn.app_engine_request(data, "/msg/add")
             if response == "OK":
                 buffer.set_text("")
-                buffer.place_cursor(buffer.get_iter_at_offset(0))
-                self.update_status_bar("Message sent")
             else:
                 self.update_status_bar(error)
         self.wTree.get_widget("send_message").set_sensitive(True)

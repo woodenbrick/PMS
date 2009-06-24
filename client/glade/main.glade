@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Sat Jun 20 23:24:31 2009 -->
+<!--Generated with glade3 3.4.5 on Wed Jun 24 14:20:35 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -351,6 +351,7 @@
                 <property name="fill">False</property>
                 <property name="padding">5</property>
                 <property name="pack_type">GTK_PACK_END</property>
+                <property name="position">1</property>
               </packing>
             </child>
           </widget>

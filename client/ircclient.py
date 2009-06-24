@@ -1,4 +1,4 @@
-from irclib import irclib
+from libs import irclib
 #irclib.DEBUG = True
 import gtk
 import pygtk
@@ -74,7 +74,6 @@ class IRCRoom():
 
     def render_message(self, name, message, special=False):
         """special refers to join/part messages etc."""
-        print self.scroller.upper, self.scroller.value
         make_adj = True if self.scroller.value == self.scroller.upper else False
         local_time = time.strftime("[%H:%M] ", time.localtime(time.time()))
         iter = self.view_buffer.get_end_iter()
@@ -85,8 +84,7 @@ class IRCRoom():
         else:
             self.view_buffer.insert_with_tags_by_name(iter, name + ": ", "name")
             self.view_buffer.insert_at_cursor(message + "\n")
-        if True:
-            self.scroller.set_value(self.scroller.upper)
+        self.wTree.get_widget("view").scroll_to_mark(self.view_buffer.get_insert(), 0.2)
 
     
     def handle_message(self, connection, event):
@@ -132,9 +130,11 @@ class IRCRoom():
     
     def on_entry_key_press_event(self, textview, key):
         if key.keyval == 65293:
-            self.conn.server.privmsg(self.channel, self.wTree.get_widget("entry").get_text())
-            self.render_message(self.convert_irc_name_to_pms(self.conn.username), self.wTree.get_widget("entry").get_text())
-            self.wTree.get_widget("entry").set_text("")
+            buffer = self.wTree.get_widget("entry").get_buffer()
+            start, end = buffer.get_bounds()
+            self.conn.server.privmsg(self.channel, buffer.get_text(start, end).strip())
+            self.render_message(self.convert_irc_name_to_pms(self.conn.username), buffer.get_text(start, end).strip())
+            buffer.delete(start, end)
             
     def on_chat_window_destroy(self, widget):
         self.conn.server.part(self.channel, message="Bye")

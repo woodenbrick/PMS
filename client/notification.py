@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-try:
-  import pynotify
-  pynotify.init('PMS Notification')
-except ImportError:
-  #running windows
-  import balloontips
+
 import time
 import gtk
 import gtk.glade
@@ -12,6 +7,7 @@ import sys
 import cgi
 import gobject
 from settings import Settings
+from libs import gtkPopupNotify
 
 class NotificationSystem(object):
     
@@ -32,7 +28,7 @@ class NotificationSystem(object):
 
         formatted_msg = "%s\n%s\n%s" % (cgi.escape(last_msg[3]), nicetime, footer)
 
-        self.popup(header, formatted_msg, avatar)
+        self.new_popup(header, formatted_msg, avatar)
         
     def change_users_online_status(self, came_online, went_offline, avatars):
         if len(came_online) == 0 and len(went_offline) == 0:
@@ -47,7 +43,7 @@ class NotificationSystem(object):
         came_str = ", ".join(came_online) + " came online. " if len(came_online) > 0 else ""
         went_str = ", ".join(went_offline) + " went offline." if len(went_offline) > 0 else ""
         
-        self.popup("PMS", came_str + went_str, avatar)
+        self.new_popup("PMS", came_str + went_str, avatar)
         
     def hide(self):
         self.tray_icon.set_visible(False)
@@ -55,108 +51,25 @@ class NotificationSystem(object):
     def set_icon(self, state=Settings.LOGO1):
         self.tray_icon.set_from_file(state)
         
-class WindowsNotifier(NotificationSystem):
+        
+
+class CrossPlatformNotifier(NotificationSystem, gtkPopupNotify.NotificationStack):
     def __init__(self, main_program):
         NotificationSystem.__init__(self, main_program)
-        self.notify_stack = []
-        self.offset = 0
-        
-    def popup(self, header, formatted_msg, avatar):
-        self.notify_stack.append(WindowsPopup(self.offset, self.destroy_popup_cb,
-                                              header, formatted_msg, avatar))
-        self.offset += self.notify_stack[-1].y
-        
-    def destroy_popup_cb(self, popup):
-        self.notify_stack.remove(popup)
-        #move them about
-        offset = 0
-        for note in self.notify_stack:
-            offset = note.reposition(offset)
-        self.offset = offset
-    
-    
-class WindowsPopup(object):
-    def __init__(self, offset, destroy_cb, header, formatted_msg, avatar):
-        self.destroy_cb = destroy_cb
-        self.wTree = gtk.glade.XML(Settings.GLADE + "notification.glade")
-        self.wTree.signal_autoconnect(self)
-        self.wTree.get_widget("header").set_markup("<b>%s</b>" % header)
-        self.wTree.get_widget("message").set_text(formatted_msg)
-        self.wTree.get_widget("avatar").set_from_pixbuf(avatar)
-        self.window = self.wTree.get_widget("window")
-        self.x, self.y = self.window.get_size()
-        self.WINDOWS_TASKBAR_OFFSET = 30
-        self.window.move(gtk.gdk.screen_width() - self.x, gtk.gdk.screen_height()- self.y - offset- self.WINDOWS_TASKBAR_OFFSET)
-        self.window.show()
-        self.wTree.get_widget("counter").set_markup("<b>5</b>")
-        self.fade_in_timer = gobject.timeout_add(100, self.fade_in)
-        self.hover = False
-        
-    
-    def reposition(self, offset):
-        """reposition any popups after old ones have disappeared
-        new position is this popups position in the stack, offset is
-        the offset from the bottom of the entire stack"""
-        new_offset = self.y + offset
-        self.window.move(gtk.gdk.screen_width()-self.x, gtk.gdk.screen_height()-new_offset - self.WINDOWS_TASKBAR_OFFSET)
-        return new_offset
-
-    
-    def fade_in(self):
-        opacity = self.window.get_opacity()
-        opacity += 0.10
-        if opacity >= 1:
-            self.counter = 5
-            self.wait_timer = gobject.timeout_add(1000, self.wait)
-            return False
-        self.window.set_opacity(opacity)
-        return True
-            
-    def wait(self):
-        if not self.hover:
-            self.counter -= 1
-        self.wTree.get_widget("counter").set_markup(str("<b>%s</b>" % self.counter))
-        if self.counter == 0:
-            self.fade_out_timer = gobject.timeout_add(100, self.fade_out)
-            return False
-
-        return True
-      
-    
-    def fade_out(self):
-        opacity = self.window.get_opacity()
-        opacity -= 0.10
-        if opacity <= 0:
-            self.in_progress = False
-            self.hide_notification()
-            return False
-        self.window.set_opacity(opacity)
-        return True
-    
-    def on_window_enter_notify_event(self, *args):
-        self.hover = True
-    
-    def on_window_leave_notify_event(self, *args):
-        self.hover = False
-        
-    def hide_notification(self, *args):
-        """The user has clicked the 'X' in the corner to close"""
-        #destroy timers if they are running
-        for timer in ("fade_in_timer", "fade_out_timer", "wait_timer"):
-            if hasattr(self, timer):
-                gobject.source_remove(getattr(self, timer))
-        self.window.destroy()
-        self.destroy_cb(self)
-    
+        gtkPopupNotify.NotificationStack.__init__(self)
+        self.bg_color = gtk.gdk.Color("green")
     
     
 
 class LinuxNotifier(NotificationSystem):
     def __init__(self, main_program):
+        #notification system based on pynotify
+        import pynotify
+        pynotify.init('PMS Notification')
         NotificationSystem.__init__(self, main_program)
 
         
-    def popup(self, header, formatted_msg, avatar):
+    def new_popup(self, header, formatted_msg, avatar):
         if sys.platform == "linux2":
             n = pynotify.Notification(header, formatted_msg)
             #timeout seems to cause breakage?
