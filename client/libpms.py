@@ -218,10 +218,13 @@ class AppEngineConnection(object):
          :Parameters:
           - filename: The path to the filename that is to be uploaded
         """
+        print 'FILENAME', filename
         register_openers()
-        data = {"avatar": open(filename, "rb")}
+        f = open(filename, "rb")
+        data = {"avatar": f}
         data.update(self.default_values)
         datagen, headers = multipart_encode(data)
+        print headers, "HEllo"
         request = urllib2.Request(Settings.SERVER + "/usr/changeavatar", datagen, headers)
         return self.check_xml_response(urllib2.urlopen(request))
 

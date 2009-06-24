@@ -49,20 +49,25 @@ class IRCNickTest(unittest.TestCase):
 class LibPMSTest(unittest.TestCase):
     def setUp(self):
         self.conn = libpms.AppEngineConnection()
+        self.conn.default_values = {"name" : "Daniel",
+                                    "session_key" : "npZPvqvcVzes2SZVfYIe"}
         self.xml = open("test_data/loggedin.xml")
 
     def test_xml_parser(self):
         response, tree = self.conn.check_xml_response(self.xml)
         self.assertEqual(response, "OK")
+
+    def test_upload_avatar(self):
+        self.conn.send_avatar("client/images/logo1.png")
         
-class NotifyTest(unittest.TestCase):
-    def setUp(self):
-        self.notifier = notification.WindowsNotifier(None)
-        Settings.GLADE = "client/glade/"
-    
-    def test_popup_listing(self):
-        self.notifier.popup("Hello", "Testing", None)
-        self.notifier.popup("Test", "Test again", None)
+#class NotifyTest(unittest.TestCase):
+#    def setUp(self):
+#        self.notifier = notification.WindowsNotifier(None)
+#        Settings.GLADE = "client/glade/"
+#    
+#    def test_popup_listing(self):
+#        self.notifier.popup("Hello", "Testing", None)
+#        self.notifier.popup("Test", "Test again", None)
         
 if __name__ == "__main__":
     #testcase = NiceTimeCorrectTime()

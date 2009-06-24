@@ -108,16 +108,8 @@ class PreferencesWindow(object):
             if response != "OK":
                 self.wTree.get_widget("preference_error").set_text(error)
                 return
-            if sys.platform == "linux2":
-                os.rename(self.thumb_path, self.preferences.avatar)
-            else:
-                #XXX
-                #windows magically changes the name of the file by divination
-                #actually no, it will freeze the program if it tries to delete
-                #old file and rename
-                #no solution yet
-                pass
-            response = self.parent.gae_conn.send_avatar(self.preferences.avatar)
+            os.remove(self.preferences.avatar)
+            os.rename(self.thumb_path, self.preferences.avatar)
             self.parent.avatars[Settings.USERNAME].update()
             self.parent.update_liststore_pixbufs(self.parent.avatars[Settings.USERNAME])
         self.parent.preferences.save_options()
