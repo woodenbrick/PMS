@@ -12,7 +12,7 @@ images = glob.glob(os.path.join(src_dir, "images", "*"))
 setup(
 name='PMS',
 version='0.01',
-packages=['client', 'client.poster'],
+packages=['client', 'client.libs', 'client.libs.poster'],
 scripts=['pms'],
 
 windows=[{
