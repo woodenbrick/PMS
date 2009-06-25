@@ -23,7 +23,7 @@ You should have received a copy of the GNU General Public License
 along with pms.  If not, see http://www.gnu.org/licenses/
 """
     FACEBOOK_TIMEOUT = 400000
-    AVATAR_CHECK_TIMEOUT = 600000
+    AVATAR_CHECK_TIMEOUT = 500000
     NICETIME_TIMOUT = 60000
     #these will be tweaked at runtime if necessary,
     #however for testing I have included some defaults
@@ -37,7 +37,6 @@ along with pms.  If not, see http://www.gnu.org/licenses/
     IMAGES = "images/"
     GLADE = "glade/"
     LOGGING_LEVEL = 20
-    LOGLVL = 20
     LOGO1 = "images/logo1.png"
     LOGO2 = "images/log2.png"
     LOGO1_SMALL = "images/logo1_64.png"
