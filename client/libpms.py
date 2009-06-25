@@ -114,10 +114,12 @@ class AppEngineConnection(object):
         request.daemon = True
         request.start()
         while request.isAlive():
-            gtk.main_iteration()
-            if hasattr(self, "discard_threads") and mapping != "/usr/log/out":
+            if mapping == "/usr/log/out":
+                continue
+            if hasattr(self, "discard_threads"):
                 log.debug('discarding thread: %s' % mapping)
                 return "DISCARD", "Thread has been discarded"
+            gtk.main_iteration()
         response = queue.get()
         
         return response
@@ -165,6 +167,8 @@ class AppEngineConnection(object):
             log.error(e)
             self.error = str(e.reason)
             return "URLError", self.error
+        #if mapping == "/usr/log/out":
+        #    return False
         response, tree = self.check_xml_response(request)
         if response != "OK":
             log.debug("ERROR with request to %s: %s" % (mapping, response))
