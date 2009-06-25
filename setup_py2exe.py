@@ -3,7 +3,9 @@ from distutils.core import setup
 import py2exe
 import os
 import glob
-
+import sys
+f = open("shite", "w")
+sys.stdout = f
 src_dir = "client"
 glade = glob.glob(os.path.join(src_dir, "glade", "*.glade"))
 images = glob.glob(os.path.join(src_dir, "images", "*"))
@@ -13,11 +15,11 @@ setup(
 name='PMS',
 version='0.01',
 packages=['client', 'client.libs', 'client.libs.poster'],
-scripts=['pms'],
+scripts=['bin/pms'],
 
 windows=[{
-    'script': 'pms',
-    'icon_resources': [(1, 'client/images/event-notify-blue.ico')]
+    'script': 'bin/pms',
+    'icon_resources': [(1, 'client/images/logo1.png')]
     }],
 
 data_files=[
