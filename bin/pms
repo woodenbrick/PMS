@@ -42,14 +42,12 @@ else:
         src_dir = os.path.join(src_dir, "client") 
 
 from client.settings import Settings
-from client import login
 
 Settings.IMAGES = os.path.join(src_dir, "images") + os.sep
 Settings.GLADE = os.path.join(src_dir, "glade") + os.sep
 Settings.LOGO1 = Settings.IMAGES + "logo1.png"
 Settings.LOGO1_SMALL = Settings.IMAGES + "logo1_64.png"
 Settings.LOGO2 = Settings.IMAGES + "logo2.png"
-    
 
 parser = optparse.OptionParser(version="%s %s by %s" % (Settings.NAME, Settings.VERSION,
                                                         Settings.AUTHOR))
@@ -63,8 +61,6 @@ options, args = parser.parse_args()
 
 if options.debug:
     Settings.LOGGING_LEVEL = 10
-else:
-    Settings.LOGGING_LEVEL = 20
 if options.error_log:
     sys.stderr = open(Settings.HOME + "error.log", "a")
 if options.local_server:
@@ -78,5 +74,6 @@ except OSError:
     pass
 
 gobject.threads_init()
+from client import login
 login.Login()
 gtk.main()
