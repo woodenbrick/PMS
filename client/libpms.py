@@ -34,8 +34,7 @@ socket.setdefaulttimeout(15)
 from xml.etree import ElementTree as ET
 from settings import Settings
 from misc import new_logger
-
-
+from libs import facebook
 
 log = new_logger("libpms.py")
 
@@ -232,7 +231,7 @@ class AppEngineConnection(object):
         request = urllib2.Request(Settings.SERVER + "/usr/changeavatar", datagen, headers)
         return self.check_xml_response(urllib2.urlopen(request))
 
-import facebook       
+       
 class ThreadedFBConnection(threading.Thread):
     
     def __init__(self, fblib_call, data, queue):
