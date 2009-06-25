@@ -127,10 +127,8 @@ class PMS(object):
         #currently it just returns everyone
         if not hasattr(self, "online_users"):
             self.online_users = []
-        came_online = [user for user in user_list if user not in self.online_users]
+        came_online = [user for user in user_list if user not in self.online_users and user != Settings.USERNAME]
         went_offline = [user for user in self.online_users if user not in user_list]
-        #XXX when user goes offline they arent removed from the list
-        #http://www.pygtk.org/docs/pygtk/class-gtkwindow.html#method-gtkwindow--move
         self.online_users = user_list
         self.notifier.change_users_online_status(came_online, went_offline, self.avatars)
         markup = "<span foreground='red'><b>%s users online: </b>" % len(
@@ -281,6 +279,7 @@ class PMS(object):
             gobject.source_remove(self.facebook_timer)
         except AttributeError:
             pass
+        log.info("Requesting Logout")
         self.gae_conn.app_engine_request({}, "/usr/log/out")
         if widget.name == "logout_main" or widget.name == "logout_right_click":
             self.wTree.get_widget("window").destroy()
