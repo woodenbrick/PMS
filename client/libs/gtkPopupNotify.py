@@ -89,7 +89,7 @@ class Popup(gtk.Window):
           `message` the main body of the notification
           `image` a string pointing to an image resource, or a gtk.gdk.Pixbuf
         """
-        gtk.Window.__init__(self)
+        gtk.Window.__init__(self, type=gtk.WINDOW_POPUP)
         
         self.set_size_request(stack.size_x, -1)
         self.set_decorated(False)

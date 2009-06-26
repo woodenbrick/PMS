@@ -202,8 +202,9 @@ class PMS(object):
             response, error = self.gae_conn.app_engine_request(data, "/msg/add")
             if response == "OK":
                 buffer.set_text("")
+                self.update_status_bar("")
             else:
-                self.update_status_bar(error)
+                self.update_status_bar("Error " + error)
         self.wTree.get_widget("send_message").set_sensitive(True)
 
 

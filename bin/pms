@@ -60,7 +60,7 @@ options, args = parser.parse_args()
 
 if options.debug:
     Settings.LOGGING_LEVEL = 10
-if options.error_log:
+if options.error_log or sys.platform == "win32":
     sys.stderr = open(Settings.HOME + "error.log", "a")
 if options.local_server:
     Settings.SERVER = "http://127.0.0.1:8080"
