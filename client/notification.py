@@ -40,7 +40,7 @@ class NotificationSystem(object):
                 avatar = avatars[went_offline[0]].pixbuf
             except:
                 avatar = gtk.gdk.pixbuf_new_from_file(Settings.LOGO1_SMALL)
-        came_str = ", ".join(came_online) + " came online. " if len(came_online) > 0 else ""
+        came_str = ", ".join(came_online) + " is online. " if len(came_online) > 0 else ""
         went_str = ", ".join(went_offline) + " went offline." if len(went_offline) > 0 else ""
         
         self.new_popup("PMS", came_str + went_str, avatar)
@@ -58,7 +58,9 @@ class CrossPlatformNotifier(NotificationSystem, gtkPopupNotify.NotificationStack
         NotificationSystem.__init__(self, main_program)
         gtkPopupNotify.NotificationStack.__init__(self)
         self.edge_offset_y = 30
-        #self.bg_color = gtk.gdk.Color("green")
+        #windows spazzes if I try to set bg color????
+        if sys.platform == "linux2":
+            self.bg_color = gtk.gdk.Color("green")
     
     
 
