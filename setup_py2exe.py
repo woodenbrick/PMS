@@ -3,9 +3,7 @@ from distutils.core import setup
 import py2exe
 import os
 import glob
-import sys
-f = open("shite", "w")
-sys.stdout = f
+
 src_dir = "client"
 glade = glob.glob(os.path.join(src_dir, "glade", "*.glade"))
 images = glob.glob(os.path.join(src_dir, "images", "*"))
@@ -15,11 +13,11 @@ setup(
 name='PMS',
 version='0.01',
 packages=['client', 'client.libs', 'client.libs.poster'],
-scripts=['bin/pms'],
+#scripts=['pms'],
 
 windows=[{
     'script': 'bin/pms',
-    'icon_resources': [(1, 'client/images/logo1.png')]
+    'icon_resources': [(1, 'client/images/logo1_128.ico')]
     }],
 
 data_files=[

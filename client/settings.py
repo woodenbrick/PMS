@@ -36,7 +36,7 @@ along with pms.  If not, see http://www.gnu.org/licenses/
 
     IMAGES = "images/"
     GLADE = "glade/"
-    LOGGING_LEVEL = 20
+    LOGGING_LEVEL = 30
     LOGO1 = "images/logo1.png"
     LOGO2 = "images/log2.png"
     LOGO1_SMALL = "images/logo1_64.png"
