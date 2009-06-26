@@ -27,11 +27,11 @@ import shutil
 if sys.platform == "win32":
     #check if we are running from src or an executable
     if hasattr(sys, "frozen"):
-        src_dir = os.path.realpath(os.path.join(os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding())), ".."))
+        src_dir = os.path.realpath(os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding())))
     else:
         src_dir = os.path.realpath(os.path.join(os.path.dirname(unicode(__file__, sys.getfilesystemencoding())), ".."))
-    sys.path.insert(0, src_dir)
-    src_dir = os.path.join(src_dir, "client")
+        sys.path.insert(0, src_dir)
+        src_dir = os.path.join(src_dir, "client")
 else:
     #linux, check if running from src or executable 
     src_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
@@ -48,7 +48,6 @@ Settings.GLADE = os.path.join(src_dir, "glade") + os.sep
 Settings.LOGO1 = Settings.IMAGES + "logo1.png"
 Settings.LOGO1_SMALL = Settings.IMAGES + "logo1_64.png"
 Settings.LOGO2 = Settings.IMAGES + "logo2.png"
-
 parser = optparse.OptionParser(version="%s %s by %s" % (Settings.NAME, Settings.VERSION,
                                                         Settings.AUTHOR))
 parser.add_option('--error-log', '-e', action="store_true",

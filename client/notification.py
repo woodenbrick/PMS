@@ -57,7 +57,8 @@ class CrossPlatformNotifier(NotificationSystem, gtkPopupNotify.NotificationStack
     def __init__(self, main_program):
         NotificationSystem.__init__(self, main_program)
         gtkPopupNotify.NotificationStack.__init__(self)
-        self.bg_color = gtk.gdk.Color("green")
+        self.edge_offset_y = 30
+        #self.bg_color = gtk.gdk.Color("green")
     
     
 

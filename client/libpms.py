@@ -29,7 +29,7 @@ import cPickle
 import threading
 import Queue
 import socket
-socket.setdefaulttimeout(15)
+socket.setdefaulttimeout(30)
 
 from xml.etree import ElementTree as ET
 from settings import Settings

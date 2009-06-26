@@ -13,11 +13,11 @@ setup(
 name='PMS',
 version='0.01',
 packages=['client', 'client.libs', 'client.libs.poster'],
-scripts=['pms'],
+#scripts=['pms'],
 
 windows=[{
-    'script': 'pms',
-    'icon_resources': [(1, 'client/images/event-notify-blue.ico')]
+    'script': 'bin/pms',
+    'icon_resources': [(1, 'client/images/logo1_128.ico')]
     }],
 
 data_files=[
