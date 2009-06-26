@@ -114,7 +114,7 @@ class FaceBookStatus(object):
             return False
         #request permission
         url = "http://www.facebook.com/authorize.php?api_key=%s&v=1.0&ext_perm=%s" % (self.api_key, ext_perm)
-        webbrowser.open_new_tab(url)
+        webbrowser.open(url)
         message = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO,
                                     gtk.BUTTONS_NONE, "PMS needs permission %s from Facebook. After you are done, click OK." % ext_perm)
         message.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
