@@ -164,7 +164,7 @@ class AppEngineConnection(object):
             request = urllib2.urlopen(Settings.SERVER + mapping, encoded_values)
         except urllib2.URLError, e:
             log.error(e)
-            self.error = str(e.reason)
+            self.error = str(e)
             return "URLError", self.error
         #if mapping == "/usr/log/out":
         #    return False
