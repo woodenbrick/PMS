@@ -19,8 +19,6 @@ class FaceBookStatus(object):
         self.secret_key = "d5077b8ef8ca5b1e948ec16ed3fc7e0c"
         self.fb = facebook.Facebook(self.api_key, self.secret_key)
         self.new_session()
-        self.permission_offline_access = 0
-        self.permission_publish_stream = 0
 
     def new_session(self, update=False):
         auth_values = self.db.cursor.execute("""select session_key, uid, expiry,

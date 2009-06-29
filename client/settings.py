@@ -4,7 +4,7 @@ import os
 class Settings(object):
     NAME = "pms"
     VERSION = "0.10"
-    AUTHOR = "Daniel Woodhouse"
+    AUTHOR = ("Daniel Woodhouse",)
     EMAIL = "wodemoneke@gmail.com"
     WEBSITE = "https://launchpad.net/pms-client/"
     WEBSITE_BUG = "https://launchpad.net/pms-client/+filebug"

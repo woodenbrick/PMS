@@ -75,6 +75,8 @@ class PMS(object):
                 self.show_groups(None)
         else:
             self.main_window.show()
+        self.wTree.get_widget("new_message").get_buffer().connect_after('insert-text', self.insert_text_cb)
+
         
         #add chatrooms to menu
         self.chat_menu = gtk.Menu()
@@ -176,13 +178,17 @@ class PMS(object):
         if key.keyval == 65293:
             self.on_send_message_clicked(widget)
 
+    def insert_text_cb(self, text_buffer, position, text, length):
+        if text == "\n":
+            text_buffer.set_text('')
+
+
     def on_send_message_clicked(self, widget):
         """Sends a new message to the PMS server"""
         buffer = self.wTree.get_widget("new_message").get_buffer()
         start, end = buffer.get_bounds()
         message = buffer.get_text(start, end).strip()
         self.wTree.get_widget("send_message").set_sensitive(False)
-        
         if self.group_box.get_active_text() == "Facebook":
             if not self.facebook_status.permission_publish_stream:
                 dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL,
@@ -571,5 +577,5 @@ class PMS(object):
     def report_bug(self, widget):
         webbrowser.open_new_tab(Settings.WEBSITE_BUG)
         
-    def open_website(dialog, link, user_data):
+    def open_website(dialog, link, user_data, argy):
         webbrowser.open(link)

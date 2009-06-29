@@ -51,6 +51,7 @@ class IRCRoom():
     def __init__(self, connection, channel):
         self.wTree = gtk.glade.XML(Settings.GLADE + "irc.glade")
         self.wTree.signal_autoconnect(self)
+        self.wTree.get_widget("entry").get_buffer().connect_after("insert-text", self.remove_nl_cb)
         self.view_buffer = self.wTree.get_widget("view").get_buffer()
         self.channel = channel
         self.conn = connection
@@ -86,6 +87,10 @@ class IRCRoom():
             self.view_buffer.insert_at_cursor(message + "\n")
         self.wTree.get_widget("view").scroll_to_mark(self.view_buffer.get_insert(), 0.2)
 
+    
+    def remove_nl_cb(self, text_buffer, position, text, length):
+        if text == "\n":
+            text_buffer.set_text("")
     
     def handle_message(self, connection, event):
         """Adds a new message from the IRC room to the users buffer"""
@@ -138,9 +143,5 @@ class IRCRoom():
             
     def on_chat_window_destroy(self, widget):
         self.conn.server.part(self.channel, message="Bye")
-        #gtk.main_quit()
 
-#connection = IRCGlobal("woodenbrick")
-#client = IRCRoom(connection, "#testmoneke")
-#IRCClient("woodenbrick", "#testmoneke")
-#gtk.main()
+
