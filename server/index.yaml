@@ -10,11 +10,18 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-# Used 7 times in query history.
+# Unused in query history -- copied from input.
 - kind: Message
   properties:
   - name: group
   - name: date
+
+# Used once in query history.
+- kind: Message
+  properties:
+  - name: group
+  - name: date
+    direction: desc
 
 # Unused in query history -- copied from input.
 - kind: Message
