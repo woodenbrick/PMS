@@ -93,25 +93,27 @@ class Check(webapp.RequestHandler):
             memcache.set("user-groups" + user.name, membership)
         all_messages = []
         for member in membership:
+            logging.info("Checking %s" % member.group.name)
+            if member.group.name == "Facebook":
+                continue
             last_message = memcache.get("last_message-" + member.group.name)
             logging.info("Last stored message in memcache: %s" % last_message)
             if last_message is not None:
                 logging.info("%s : %s" % (last_message, last_checked))
-                logging.info(last_message - last_checked)
-                if last_message == last_checked: # or last_message == "Unused":
+                if last_message == "No new" or int(last_message) == last_checked:
                     continue
             logging.info("Using datastore for %s" % member.group.name)
             logging.info("Last check: %s" % last_checked)
             messages = models.Message.all().filter("group =", member.group).filter(
-                "date >", last_checked).fetch(100)
+                "date >", last_checked).order("-date").fetch(100)
             for message in messages:
                 logging.info("date: %s" % message.date)
             if len(messages) > 0:
                 logging.info("We have %s messages, setting memcache" % len(messages))
-                memcache.set("last_message-" + member.group.name, float(messages[-1].date))
+                memcache.set("last_message-" + member.group.name, float(messages[0].date))
             else:
                 logging.info("No new messages")
-                #memcache.set("last_message-" + member.group.name, "Unused")
+                memcache.set("last_message-" + member.group.name, "No new")
             all_messages.extend(messages)
         server.response(self, values={"status" : "OK", "messages" : all_messages}, template="messages")
 
