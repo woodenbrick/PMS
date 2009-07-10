@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Sat Jun 27 18:39:42 2009 -->
+<!--Generated with glade3 3.4.5 on Thu Jul  2 19:12:42 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -323,6 +323,7 @@
         <child>
           <widget class="GtkLabel" id="main_error">
             <property name="visible">True</property>
+            <property name="label" translatable="yes">Connecting...</property>
           </widget>
           <packing>
             <property name="position">6</property>
