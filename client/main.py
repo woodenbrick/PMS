@@ -131,6 +131,9 @@ class PMS(object):
             self.online_users = []
         came_online = [user for user in user_list if user not in self.online_users and user != Settings.USERNAME]
         went_offline = [user for user in self.online_users if user not in user_list]
+        if Settings.USERNAME in went_offline:
+            #this means the data is somehow faulty, we should ignore it
+            return
         self.online_users = user_list
         self.notifier.change_users_online_status(came_online, went_offline, self.avatars)
         markup = "<span foreground='red'><b>%s users online: </b>" % len(
@@ -250,7 +253,8 @@ class PMS(object):
         else:
             self.check_in_progress = False
             self.update_status_bar(tree)
-            return True
+            self.wait_timer = gobject.timeout_add(60000, self.wait)
+            return False
         make_adj = True if self.wTree.get_widget("scrolledwindow").get_vadjustment().value == 0 else False
         messages = []
         message = {}
@@ -273,9 +277,18 @@ class PMS(object):
         self.check_in_progress = False
         return True
 
+    def wait(self):
+        print "end wait period"
+        self.check_timer = gobject.timeout_add(self.preferences.msg_check * 1000,
+                                               self.check_messages)
+        return False
+    
     def close_pms(self, widget=None):
         self.notifier.hide()
         self.main_window.hide()
+        while gtk.events_pending():
+            gtk.main_iteration()
+        self.db.db.close()
         self.gae_conn.discard_threads = True
         gobject.source_remove(self.login_timer)
         gobject.source_remove(self.check_login_timer)
@@ -292,6 +305,7 @@ class PMS(object):
             self.wTree.get_widget("window").destroy()
             login.Login(new_user=True)
         else:
+            #time.sleep(5)
             gtk.main_quit()
     
     #XXX this doesnt appear to be used but just to be safe...
@@ -410,7 +424,7 @@ class PMS(object):
                 data_tuple = (self.get_avatar(message["name"],
                                               facebook=message['pic_square']),
                               message['name'], "Facebook", escape(message['status']['message']),
-                              message['status']['time'])
+                              float(message['status']['time']))
                 self.db.add_new(data_tuple)
                 func = self.messages_liststore.prepend
             elif type == "Check_Msg":
@@ -424,10 +438,11 @@ class PMS(object):
                 data_tuple = (self.get_avatar(message[0], facebook), message[0], message[1],
                               message[2], message[3])
                 func = self.messages_liststore.append
-            func([data_tuple[0], message_body %
-                                             (data_tuple[1], data_tuple[2],
-                                              data_tuple[3], misc.nicetime(data_tuple[4])),
-                                             data_tuple[1], data_tuple[4]])
+    
+            func([data_tuple[0], message_body % (data_tuple[1], data_tuple[2],
+                                                 data_tuple[3],
+                                                 misc.nicetime(data_tuple[4])),
+                  data_tuple[1], data_tuple[4]])
 
         #if the user wants popups
         if self.preferences.popup and type != "DB" and local_user is False:
