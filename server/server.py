@@ -63,7 +63,6 @@ def is_valid_key(handler_obj):
         memcache.set("session-" + user_data['name'], sess)
     if sess is None:
         return False, "BADAUTH"
-    logging.debug("Session:" + "\n" + sess.session_key  + "\n" + user_data['session_key'])
     try:
         if sess.session_key == user_data['session_key'] and sess.ip == user_data['ip'] and sess.expires > time.time():
             return user, user_data
