@@ -1,6 +1,8 @@
 from libs import irclib
 #irclib.DEBUG = True
 import gtk
+import os
+import re
 import pygtk
 pygtk.require("2.0")
 import gtk.glade
@@ -22,6 +24,9 @@ def set_tag_table(buffer):
     tag_table.add(server_msg_tag)
 
 
+
+
+
 class IRCGlobal():
     def __init__(self, username, network="irc.freenode.net", port=6667):
         self.username = username
@@ -29,6 +34,7 @@ class IRCGlobal():
         gobject.timeout_add(1000, self.process)
         self.server = self.irc.server()
         self.server.connect(network, port, self.username)
+        
 
 
     def set_handlers(self, server_obj):
@@ -60,7 +66,7 @@ class IRCRoom():
         self.conn.server.join(self.channel)
         self.user_liststore = gtk.ListStore(str)
         self.wTree.get_widget("users").set_model(self.user_liststore)
-
+        
         cell = gtk.CellRendererText()
         col = gtk.TreeViewColumn("Users", cell)
         col.add_attribute(cell, "text", 0)
@@ -68,6 +74,8 @@ class IRCRoom():
         self.scroller = self.wTree.get_widget("scrolledwindow").get_vadjustment()
         #setting the value now for autoscrolling
         self.scroller.value = self.scroller.upper
+        self.emoticons = self.create_emote_dict(self.wTree.get_widget("user_cont"))
+        #self.wTree.get_widget("user_cont").show_all()
     
     def echo_server_response(self, connection, event):
         self.render_message("", event.arguments()[0], special=True)            
@@ -84,7 +92,16 @@ class IRCRoom():
             self.view_buffer.insert_with_tags_by_name(iter, data, "server_msg")
         else:
             self.view_buffer.insert_with_tags_by_name(iter, name + ": ", "name")
-            self.view_buffer.insert_at_cursor(message + "\n")
+            message = self.parse_for_changes(message)
+            for item in message:
+                if type(item) == str:
+                    self.view_buffer.insert_at_cursor(item)
+                else:
+                    iter = self.view_buffer.get_end_iter()
+                    anchor = self.view_buffer.create_child_anchor(iter)
+                    self.wTree.get_widget("view").add_child_at_anchor(item, anchor)
+                    item.show()
+            self.view_buffer.insert_at_cursor("\n")
         self.wTree.get_widget("view").scroll_to_mark(self.view_buffer.get_insert(), 0.2)
 
     
@@ -144,4 +161,74 @@ class IRCRoom():
     def on_chat_window_destroy(self, widget):
         self.conn.server.part(self.channel, message="Bye")
 
+    def parse_for_changes(self, text):
+        """splits a string into sections and returns a list of strings, emotes and urls"""
+        # looks for these chars and does emote conversion if necessary
+        # : ) ( /
+        match = re.search(":|\)|\(|\/", text)
+        if not match:
+            return [text]
+        string_list = text.split(" ")
+        for i in range(0, len(string_list)):
+            if re.match("http:\/\/", string_list[i]):
+                string_list[i] = URLLink(string_list[i])
+                continue
+            if not re.match(":|\)|\(|\/", string_list[i]):
+                continue
+            else:
+                #check db for matching emotes
+                try:
+                    image = gtk.Image()
+                    image.set_from_file(os.path.join(Settings.IMAGES, "emotes",
+                                                     self.emoticons[string_list[i]]))
+                    string_list[i] = image
+                except KeyError:
+                    continue
+        return string_list
+    
+    def create_emote_dict(self, container):
+        """Creates and returns a dictionary containing emoticon responses
+        eg. dic[':)'] = smile.png"""
+        f = open(os.path.join(Settings.IMAGES, "emotes", "theme"), "r")
+        emote_dic = {}
+        button_box = gtk.HBox()
+        button_box.set_spacing(5)
+        count = 0
+        for line in f:
+            if re.match("^#|\[", line):
+                continue
+            emotes = [x for x in line.split(" ") if x != ""]
+            for i in range(1, len(emotes)):
+                emote_dic[emotes[i].strip()] = emotes[0].strip()
+            if count < 70:
+                im = gtk.Image()
+                im.set_from_file(os.path.join(Settings.IMAGES, "emotes", emotes[0].strip()))
+                button = gtk.EventBox()
+                
+                button.connect("button-press-event", self.smiley_clicked, emotes[1].strip())
+                button.add(im)
+                if count % 5 == 0:
+                    container.pack_start(button_box)
+                    container.child_set_property(button_box, "expand", False)
+                    if count != 70:
+                        button_box = gtk.HBox()
+                        button_box.set_spacing(5)
+                button_box.pack_start(button, False, False, 0)
+                count += 1
+        return emote_dic
+    
+    def smiley_clicked(self, eventbox, event, png):
+        self.wTree.get_widget("entry").get_buffer().insert_at_cursor(png)
 
+    def on_smile_toggled(self, toggle_button):
+        if toggle_button.get_active():
+            self.wTree.get_widget("user_cont").show_all()
+        else:
+            self.wTree.get_widget("user_cont").hide()
+
+
+
+#at the moment urls arent done correctly this will be fixed in a later version
+class URLLink(object):
+    def __init__(self, url):
+        self.url = url
