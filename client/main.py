@@ -288,7 +288,6 @@ class PMS(object):
         self.main_window.hide()
         while gtk.events_pending():
             gtk.main_iteration()
-        self.db.db.close()
         self.gae_conn.discard_threads = True
         gobject.source_remove(self.login_timer)
         gobject.source_remove(self.check_login_timer)
@@ -306,6 +305,7 @@ class PMS(object):
             login.Login(new_user=True)
         else:
             #time.sleep(5)
+            self.db.db.close()
             gtk.main_quit()
     
     #XXX this doesnt appear to be used but just to be safe...
