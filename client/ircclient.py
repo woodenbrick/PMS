@@ -1,5 +1,5 @@
 from libs import irclib
-#irclib.DEBUG = True
+irclib.DEBUG = True
 import gtk
 import os
 import re
@@ -30,12 +30,15 @@ def set_tag_table(buffer):
 class IRCGlobal():
     def __init__(self, username, network="irc.freenode.net", port=6667):
         self.username = username
+        self.network = network
+        self.port = port
         self.irc = irclib.IRC()
         gobject.timeout_add(1000, self.process)
         self.server = self.irc.server()
         self.server.connect(network, port, self.username)
-        
-
+    
+    def reconnect(self):
+        self.server.connect(self.network, self.port, self.username)
 
     def set_handlers(self, server_obj):
         self.irc.add_global_handler("welcome", server_obj.echo_server_response)
@@ -63,10 +66,13 @@ class IRCRoom():
         self.conn = connection
         self.conn.set_handlers(self)
         set_tag_table(self.view_buffer)
-        self.conn.server.join(self.channel)
+        try:
+            self.conn.server.join(self.channel)
+        except irclib.ServerNotConnectedError:
+            self.conn.reconnect()
         self.user_liststore = gtk.ListStore(str)
         self.wTree.get_widget("users").set_model(self.user_liststore)
-        
+        self.emoticons = self.create_emote_dict(self.wTree.get_widget("user_cont"))
         cell = gtk.CellRendererText()
         col = gtk.TreeViewColumn("Users", cell)
         col.add_attribute(cell, "text", 0)
@@ -74,7 +80,7 @@ class IRCRoom():
         self.scroller = self.wTree.get_widget("scrolledwindow").get_vadjustment()
         #setting the value now for autoscrolling
         self.scroller.value = self.scroller.upper
-        self.emoticons = self.create_emote_dict(self.wTree.get_widget("user_cont"))
+        
         #self.wTree.get_widget("user_cont").show_all()
     
     def echo_server_response(self, connection, event):
@@ -112,7 +118,8 @@ class IRCRoom():
     def handle_message(self, connection, event):
         """Adds a new message from the IRC room to the users buffer"""
         self.render_message(self.convert_irc_name_to_pms(event.source()), event.arguments()[0])
-        
+    
+    
     def handle_join_and_part(self, connection, event):
         """A new user enters the room"""
         if event.target() != self.channel:
@@ -154,7 +161,14 @@ class IRCRoom():
         if key.keyval == 65293:
             buffer = self.wTree.get_widget("entry").get_buffer()
             start, end = buffer.get_bounds()
-            self.conn.server.privmsg(self.channel, buffer.get_text(start, end).strip())
+            try:
+                self.conn.server.privmsg(self.channel, buffer.get_text(start, end).strip())
+            except irclib.ServerNotConnectedError:
+                print 'Not connected to server, reconnecting'
+                self.conn.reconnect()
+                self.conn.server.join(self.channel)
+                print 'Sending message'
+                self.conn.server.privmsg(self.channel, buffer.get_text(start, end).strip())
             self.render_message(self.convert_irc_name_to_pms(self.conn.username), buffer.get_text(start, end).strip())
             buffer.delete(start, end)
             
@@ -200,17 +214,20 @@ class IRCRoom():
             emotes = [x for x in line.split(" ") if x != ""]
             for i in range(1, len(emotes)):
                 emote_dic[emotes[i].strip()] = emotes[0].strip()
-            if count < 70:
+            if True: #count < 70:
                 im = gtk.Image()
                 im.set_from_file(os.path.join(Settings.IMAGES, "emotes", emotes[0].strip()))
                 button = gtk.EventBox()
                 
-                button.connect("button-press-event", self.smiley_clicked, emotes[1].strip())
-                button.add(im)
-                if count % 5 == 0:
+                try:
+                    button.connect("button-press-event", self.smiley_clicked, emotes[1].strip())
+                    button.add(im)
+                except IndexError:
+                    pass
+                if count % 10 == 0:
                     container.pack_start(button_box)
                     container.child_set_property(button_box, "expand", False)
-                    if count != 70:
+                    if count != 100:
                         button_box = gtk.HBox()
                         button_box.set_spacing(5)
                 button_box.pack_start(button, False, False, 0)
@@ -218,7 +235,8 @@ class IRCRoom():
         return emote_dic
     
     def smiley_clicked(self, eventbox, event, png):
-        self.wTree.get_widget("entry").get_buffer().insert_at_cursor(png)
+        self.wTree.get_widget("entry").get_buffer().insert_at_cursor(" " + png + " ")
+        self.wTree.get_widget("entry").get_focus()
 
     def on_smile_toggled(self, toggle_button):
         if toggle_button.get_active():
