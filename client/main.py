@@ -90,12 +90,12 @@ class PMS(object):
             self.chat_menu.append(item)
         self.wTree.get_widget("chat_menu").set_submenu(self.chat_menu)
         self.avatars = {}
-        self.last_time = self.db.last_date()
+        self.last_time, self.last_message = self.db.last_date()
         self.fill_messages()
         self.check_in_progress = False
         self.go_online()
         self.login_timer = gobject.timeout_add(60000, self.go_online)
-        self.check_login_timer = gobject.timeout_add(3000, self.check_online)
+        self.check_login_timer = gobject.timeout_add(10000, self.check_online)
         self.check_messages()
         self.check_timer = gobject.timeout_add(self.preferences.msg_check * 1000,
                                                self.check_messages)
@@ -188,9 +188,13 @@ class PMS(object):
 
     def on_send_message_clicked(self, widget):
         """Sends a new message to the PMS server"""
+        
         buffer = self.wTree.get_widget("new_message").get_buffer()
         start, end = buffer.get_bounds()
         message = buffer.get_text(start, end).strip()
+        if message == "":
+            return
+        self.wTree.get_widget("new_message").set_sensitive(False)
         self.wTree.get_widget("send_message").set_sensitive(False)
         if self.group_box.get_active_text() == "Facebook":
             if not self.facebook_status.permission_publish_stream:
@@ -215,6 +219,8 @@ class PMS(object):
             else:
                 self.update_status_bar("Error " + error)
         self.wTree.get_widget("send_message").set_sensitive(True)
+        self.wTree.get_widget("new_message").set_sensitive(True)
+        self.wTree.get_widget("new_message").grab_focus()
 
 
     def check_facebook_status(self):
@@ -267,8 +273,18 @@ class PMS(object):
                 messages.append(message)
                 continue
             message[i.tag] = i.text
+        if len(messages) == 0:
+            self.check_in_progress = False
+            return True
+        if self.last_message == messages[0]['data'] and self.last_time + 3 >= messages[0]['date']:
+            log.debug('Discarding old message')
+            self.db.cursor.execute("""update messages set date=? where date=?""",
+                            (self.last_time+1, self.last_time))
+            self.db.db.commit()
+            self.check_in_progress = False
+            return True
         self.render_messages(messages, "Check_Msg", local_user=local_user)
-        self.last_time = self.db.last_date()
+        self.last_time, self.last_message = self.db.last_date()
         vadj = self.wTree.get_widget("scrolledwindow").get_vadjustment()
         if make_adj:
             vadj.value = -1
@@ -291,7 +307,14 @@ class PMS(object):
         self.gae_conn.discard_threads = True
         gobject.source_remove(self.login_timer)
         gobject.source_remove(self.check_login_timer)
-        gobject.source_remove(self.check_timer)
+        try:
+            gobject.source_remove(self.check_timer)
+        except:
+            pass
+        try:
+            gobject.source_remove(self.wait_timer)
+        except:
+            pass
         gobject.source_remove(self.avatar_timer)
         gobject.source_remove(self.nicetime_timer)
         try:
