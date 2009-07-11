@@ -208,6 +208,9 @@ class PMS(object):
             great_success = self.facebook_status.change_status(message)
             if great_success != "HIGH FIVE!":
                 self.wTree.get_widget("main_error").set_text(great_success)
+            else:
+                buffer.set_text("")
+                self.update_status_bar("")
         else:
             self.update_status_bar("Sending message...")
             data = {'message' : message,
