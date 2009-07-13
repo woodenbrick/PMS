@@ -20,6 +20,10 @@ def set_tag_table(buffer):
     server_msg_tag = gtk.TextTag("server_msg")
     server_msg_tag.set_property("foreground", "dark green")
     server_msg_tag.set_property("weight", pango.WEIGHT_BOLD)
+    url_tag = gtk.TextTag(name="url")
+    url_tag.set_property("foreground", "blue")
+    url_tag.set_property("underline", pango.UNDERLINE_SINGLE)
+    tag_table.add(url_tag)
     tag_table.add(name_tag)
     tag_table.add(server_msg_tag)
 
@@ -60,7 +64,10 @@ class IRCRoom():
     def __init__(self, connection, channel):
         self.wTree = gtk.glade.XML(Settings.GLADE + "irc.glade")
         self.wTree.signal_autoconnect(self)
+        self.wTree.get_widget("window1").set_title("PMS Chat: " + channel.split("pms_")[1])
+        self.wTree.get_widget("window1").set_icon_from_file(Settings.LOGO1)
         self.wTree.get_widget("entry").get_buffer().connect_after("insert-text", self.remove_nl_cb)
+        #self.wTree.get_widget("window1").connect("destroy", self.main_quit)
         self.view_buffer = self.wTree.get_widget("view").get_buffer()
         self.channel = channel
         self.conn = connection
@@ -101,13 +108,19 @@ class IRCRoom():
             message = self.parse_for_changes(message)
             for item in message:
                 if type(item) == str:
-                    self.view_buffer.insert_at_cursor(item)
+                    self.view_buffer.insert(iter, item)
+                elif type(item) == URLLink:
+                    start_mark = self.view_buffer.create_mark(None, iter, True)
+                                        #self.view_buffer.get_end_iter(), True)
+                    self.view_buffer.insert_at_cursor(item.url)
+                    self.view_buffer.apply_tag_by_name("url", self.view_buffer.get_iter_at_mark(start_mark),
+                                                        iter) #self.view_buffer.get_end_iter())            
                 else:
-                    iter = self.view_buffer.get_end_iter()
+                    #iter = self.view_buffer.get_end_iter()
                     anchor = self.view_buffer.create_child_anchor(iter)
                     self.wTree.get_widget("view").add_child_at_anchor(item, anchor)
                     item.show()
-            self.view_buffer.insert_at_cursor("\n")
+            self.view_buffer.insert(iter, "\n")
         self.wTree.get_widget("view").scroll_to_mark(self.view_buffer.get_insert(), 0.2)
 
     
@@ -142,6 +155,10 @@ class IRCRoom():
     
     def nickname_in_use(self, connection, event):
         self.render_message("", "This nickname is already in use", special=True)
+        self.conn.username = "_" + self.conn.username
+        connection.nick(self.conn.username)
+        self.conn.server.join(self.channel)
+        
     
     def handle_user_list(self, connection, event):
         """Gets the userlist for this room as we enter"""
@@ -179,7 +196,8 @@ class IRCRoom():
         """splits a string into sections and returns a list of strings, emotes and urls"""
         # looks for these chars and does emote conversion if necessary
         # : ) ( /
-        match = re.search(":|\)|\(|\/", text)
+        search_list = "\)|\||\(|:|;|\\|\/"
+        match = re.search(search_list, text)
         if not match:
             return [text]
         string_list = text.split(" ")
@@ -187,7 +205,7 @@ class IRCRoom():
             if re.match("http:\/\/", string_list[i]):
                 string_list[i] = URLLink(string_list[i])
                 continue
-            if not re.match(":|\)|\(|\/", string_list[i]):
+            elif string_list[i] == "":
                 continue
             else:
                 #check db for matching emotes
@@ -214,7 +232,7 @@ class IRCRoom():
             emotes = [x for x in line.split(" ") if x != ""]
             for i in range(1, len(emotes)):
                 emote_dic[emotes[i].strip()] = emotes[0].strip()
-            if True: #count < 70:
+            if count < 60:
                 im = gtk.Image()
                 im.set_from_file(os.path.join(Settings.IMAGES, "emotes", emotes[0].strip()))
                 button = gtk.EventBox()
@@ -224,10 +242,10 @@ class IRCRoom():
                     button.add(im)
                 except IndexError:
                     pass
-                if count % 10 == 0:
+                if count % 5 == 0:
                     container.pack_start(button_box)
                     container.child_set_property(button_box, "expand", False)
-                    if count != 100:
+                    if count != 60:
                         button_box = gtk.HBox()
                         button_box.set_spacing(5)
                 button_box.pack_start(button, False, False, 0)
@@ -236,7 +254,7 @@ class IRCRoom():
     
     def smiley_clicked(self, eventbox, event, png):
         self.wTree.get_widget("entry").get_buffer().insert_at_cursor(" " + png + " ")
-        self.wTree.get_widget("entry").get_focus()
+        self.wTree.get_widget("entry").grab_focus()
 
     def on_smile_toggled(self, toggle_button):
         if toggle_button.get_active():
@@ -245,8 +263,15 @@ class IRCRoom():
             self.wTree.get_widget("user_cont").hide()
 
 
+    def main_quit(self, *args):
+        gtk.main_quit()
 
 #at the moment urls arent done correctly this will be fixed in a later version
 class URLLink(object):
     def __init__(self, url):
         self.url = url
+        
+if __name__ == "__main__":
+    client = IRCGlobal("wodemoneke")
+    room = IRCRoom(client, "#pms-Debugging")
+    gtk.main()
