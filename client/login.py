@@ -70,9 +70,9 @@ class Login(object):
 
     def show_main(self, dump=False):
         self.gae_conn.set_password(self.password)
-        self.db.cursor.execute("""UPDATE users SET auto_login=? WHERE username=?""",
+        self.db.cursor.execute("""UPDATE users SET auto_login=?, last_login=? WHERE username=?""",
                                (self.wTree.get_widget("auto_login").get_active(),
-                                self.username))
+                                time.time(), self.username))
         self.db.db.commit()
         self.on_login_window_destroy(quit=False)
         Settings.USERNAME = self.username
