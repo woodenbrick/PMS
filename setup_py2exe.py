@@ -6,8 +6,8 @@ import glob
 
 src_dir = "client"
 glade = glob.glob(os.path.join(src_dir, "glade", "*.glade"))
-images = glob.glob(os.path.join(src_dir, "images", "*"))
-
+images = glob.glob(os.path.join(src_dir, "images", "*.png|*.ico"))
+emotes = glob.glob(os.path.join(src_dir, "images", "emotes", "*"))
 
 setup(
 name='PMS',
@@ -22,8 +22,9 @@ windows=[{
 
 data_files=[
 ('glade', glade),
-
-('images', images),],
+('images', images),
+('emotes', emotes)
+],
 
 options = {
 'py2exe' : {

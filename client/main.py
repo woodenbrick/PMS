@@ -268,6 +268,8 @@ class PMS(object):
         messages = []
         message = {}
         local_user = False
+        from xml.etree import ElementTree as ET
+        ET.dump(tree)
         for i in tree.getiterator():
             if i.tag == "date":
                 message[i.tag] = float(i.text)
@@ -334,19 +336,20 @@ class PMS(object):
             self.db.db.close()
             gtk.main_quit()
     
-    #XXX this doesnt appear to be used but just to be safe...
-    #def destroy_window(self, widget, *args):
-    #    widget.hide()
-    #    return True
-
-    
     def activate_menu(self, *args, **kwargs):
         if self.main_window.is_active():
-            self.main_window.hide()
+            print 'is active'
+            func = self.main_window.hide
         else:
-            self.main_window.present()
-        return True
+            print 'is not active'
+            func = self.main_window.present
         
+        #return True
+    
+    def hide_and_seek(self, func):
+        func()
+        return False
+    
     def on_window_focus_in_event(self, *args):
         """Sets the status icon back to normal if necessary"""
         self.notifier.set_icon(Settings.LOGO1)
