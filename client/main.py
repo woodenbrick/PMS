@@ -338,18 +338,15 @@ class PMS(object):
     
     def activate_menu(self, *args, **kwargs):
         if self.main_window.is_active():
-            print 'is active'
-            func = self.main_window.hide
+            self.main_window.hide()
         else:
-            print 'is not active'
-            func = self.main_window.present
-        gobject.idle_add(self.hide_and_seek, func)
+            self.main_window.present()
+        return True
         
         #return True
-    
-    def hide_and_seek(self, func):
-        func()
-        return False
+    def destroy_window(self, *args):
+        self.main_window.hide()
+        return True
     
     def on_window_focus_in_event(self, *args):
         """Sets the status icon back to normal if necessary"""
