@@ -28,14 +28,14 @@ along with pms.  If not, see http://www.gnu.org/licenses/
     #these will be tweaked at runtime if necessary,
     #however for testing I have included some defaults
     try:
-        HOME = os.environ['HOME'] + "/.eventnotify/"
+        HOME = os.path.join(os.environ['HOME'], ".eventnotify") + os.sep
         HOMEMAIN = os.environ['HOME']
     except KeyError:
         HOME = os.path.join(os.environ['HOMEDRIVE'], os.environ['HOMEPATH'],                            'eventnotify') + os.sep
         HOMEMAIN = os.environ['HOMEPATH']
 
-    IMAGES = "images/"
-    GLADE = "glade/"
+    IMAGES = "images" + os.sep
+    GLADE = "glade/" + os.sep
     LOGGING_LEVEL = 30
     LOGO1 = "images/logo1.png"
     LOGO2 = "images/log2.png"

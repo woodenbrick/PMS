@@ -23,7 +23,7 @@ windows=[{
 data_files=[
 ('glade', glade),
 ('images', images),
-('emotes', emotes)
+('images/emotes', emotes)
 ],
 
 options = {

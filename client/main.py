@@ -53,6 +53,7 @@ class PMS(object):
         self.wTree.get_widget("notifications").set_active(self.preferences.popup)
         self.wTree.get_widget("username_label").set_text("Logged in as " + Settings.USERNAME)
         self.main_window = self.wTree.get_widget("window")
+        self.main_window.show()
         self.main_window.set_icon_from_file(Settings.LOGO1)
         self.right_click_menu = self.wTree.get_widget("right_click_menu")
         self.notifier = notification.CrossPlatformNotifier(self)
