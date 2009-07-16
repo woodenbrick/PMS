@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Thu Jul  2 19:12:42 2009 -->
+<!--Generated with glade3 3.4.5 on Thu Jul 16 17:18:13 2009 -->
 <glade-interface>
   <widget class="GtkMenu" id="right_click_menu">
     <property name="visible">True</property>
@@ -59,6 +59,7 @@
     <property name="title" translatable="yes">PMS</property>
     <property name="window_position">GTK_WIN_POS_CENTER</property>
     <signal name="focus_in_event" handler="on_window_focus_in_event"/>
+    <signal name="destroy" handler="catch_destroy"/>
     <signal name="delete_event" handler="destroy_window"/>
     <child>
       <widget class="GtkVBox" id="vbox4">
