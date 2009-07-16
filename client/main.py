@@ -118,7 +118,7 @@ class PMS(object):
         if response == "OK":
             self.set_online(tree)
         else:
-            self.wTree.get_widget("main_error").set_text(tree)
+            self.wTree.get_widget("main_error").set_text("Problem retrieving userlist")
         return True
         
     def set_online(self, tree):
@@ -343,6 +343,7 @@ class PMS(object):
         else:
             print 'is not active'
             func = self.main_window.present
+        gobject.idle_add(self.hide_and_seek, func)
         
         #return True
     
