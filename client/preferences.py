@@ -171,7 +171,7 @@ class Avatar(object):
                                             values (?, ?)""", (username, self.path))
                 self.parent.user_db.db.commit()
             else:
-                shutil.copy(dir + "avatar-default.png", self.path)
+                shutil.copy(Settings.IMAGES + "avatar-default.png", self.path)
                 self.pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
         self.stat_time = os.stat(dir).st_mtime
         

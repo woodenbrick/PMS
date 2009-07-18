@@ -355,7 +355,7 @@ class PMS(object):
             
     def popup_menu(self, *args):
         self.right_click_menu.popup(parent_menu_shell=None, parent_menu_item=None,
-                                    func=gtk.status_icon_position_menu,
+                                    func=None, #gtk.status_icon_position_menu,
                                         button=args[1], activate_time=args[2],
                                         data=self.notifier.tray_icon)
     
