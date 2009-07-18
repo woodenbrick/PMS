@@ -68,12 +68,11 @@ options, args = parser.parse_args()
 
 if options.debug:
     Settings.LOGGING_LEVEL = 10
-#if options.error_log or sys.platform == "win32":
-#    try:
-#        sys.stderr = open(Settings.HOME + "error.log", "a")
-#    except IOError:
-#        sys.stderr = open(Settings.HOME + "error.log", "w")
-sys.stderr = sys.__stderr__
+if options.error_log or sys.platform == "win32":
+    try:
+        sys.stderr = open(Settings.HOME + "error.log", "a")
+    except IOError:
+        sys.stderr = open(Settings.HOME + "error.log", "w")
 if options.local_server:
     Settings.SERVER = "http://127.0.0.1:8080"
     Settings.HOME = Settings.HOME + "dev" + os.sep

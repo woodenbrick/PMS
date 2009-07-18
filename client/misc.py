@@ -29,8 +29,6 @@ def new_logger(name):
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    filelog = logging.FileHandler(Settings.HOME + "debug.log")
-    logger.addHandler(filelog)
     return logger
 
 def nicetime(past_time, fuzzy=False, length=1):

@@ -1,7 +1,7 @@
 [Setup]
 AppName=PMS
-AppVerName=PMS 0.15
-AppVersion=0.15
+AppVerName=PMS 0.15.5
+AppVersion=0.15.5
 AppPublisher=Daniel Woodhouse
 AppPublisherUrl=http://github.com/woodenbrick
 DefaultDirName={pf}\PMS

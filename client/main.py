@@ -63,9 +63,8 @@ class PMS(object):
             new_img = gtk.Image()
             new_img.set_from_file(Settings.IMAGES + i + ".png")
             self.wTree.get_widget("menu_" + i).set_image(new_img)
-
         self.db = db.MessageDB(Settings.HOME + "MessageDB_" + Settings.USERNAME)
-        self.set_groups()        
+        self.set_groups()
         if not self.fill_groups():
             popup = gtk.MessageDialog(None, gtk.DIALOG_MODAL,
                                   gtk.MESSAGE_INFO, gtk.BUTTONS_YES_NO,

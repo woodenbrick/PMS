@@ -6,7 +6,7 @@ import glob
 
 src_dir = "client"
 glade = glob.glob(os.path.join(src_dir, "glade", "*.glade"))
-images = glob.glob(os.path.join(src_dir, "images", "*.png|*.ico"))
+images = glob.glob(os.path.join(src_dir, "images", "*.*"))
 emotes = glob.glob(os.path.join(src_dir, "images", "emotes", "*"))
 
 setup(
