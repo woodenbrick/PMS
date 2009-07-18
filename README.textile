@@ -11,6 +11,7 @@ Windows users can download an executable "here":http://github.com/woodenbrick/PM
 
 Ubuntu users can use the "download section":http://github.com/woodenbrick/PMS/downloads too, or add the "PPA":https://launchpad.net/~pms-client-team/+archive/ppa to get automatic updates.
 Copy and paste the following into a terminal to achieve all this in one step:
+<pre>
 echo "deb http://ppa.launchpad.net/pms-client-team/ppa/ubuntu hardy main" | sudo tee -a /etc/apt/sources.list && sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A2996F07 && sudo apt-get update && sudo apt-get install pms-client
-
+</pre>
 
