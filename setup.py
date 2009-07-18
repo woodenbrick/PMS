@@ -8,7 +8,8 @@ PROGRAM_NAME = 'pms-client'
 VERSION = '0.10'
 
 glade = glob.glob(os.path.join("client", "glade", "*.glade"))
-images = glob.glob(os.path.join("client", "images", "*"))
+images = glob.glob(os.path.join("client", "images", "*.png"))
+emotes = glob.glob(os.path.join("client", "images", "emotes", "*"))
 desc = """Desktop client for private microblogging service"""
 long_desc = """ Allows the user to keep in touch with groups of people. Groups can be password protected. Also includes Facebook status update and retrieval."""
 
@@ -27,5 +28,6 @@ setup ( name = PROGRAM_NAME,
             ('share/applications/', ['pms.desktop']),
             ('share/pms/glade', glade),
             ('share/pms/images', images),
+            ('share/pms/images/emotes', emotes),
             ('bin/', ['bin/pms'])],
 )
